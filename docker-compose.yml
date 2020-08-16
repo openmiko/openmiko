@@ -2,21 +2,17 @@ version: "3"
 
 services:
   builder:
-    image: tachang/openmiko-buildenv
+    image: openmiko/openmiko:latest
     environment:
       EXAMPLE: development
     volumes:
       - ".:/src"
-      - "./legacy_src:/openmiko/legacy_src"
-      - "./patches:/openmiko/patches"
-      - "./config:/openmiko/config"
-      - "./buildscripts:/openmiko/buildscripts"
-      - "./fs:/openmiko/fs"
       - "./sharedfiles:/sharedfiles"
-      - "./output/images:/openmiko/_build/buildroot-2016.02/output/images"
-      - "./output/target/openmiko/_build/buildroot-2016.02/output/target"
-    ports:
-      - "69:69/udp"
+      # - "./buildroot_output:/openmiko/build/buildroot-2016.02/output"
+      # - "./output/images:/openmiko/build/buildroot-2016.02/output/images"
+      # - "./output/target/openmiko/build/buildroot-2016.02/output/target"
+    # ports:
+    #   - "69:69/udp"
     cap_add:
       - ALL
 

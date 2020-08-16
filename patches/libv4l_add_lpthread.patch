@@ -1,0 +1,9 @@
+--- a/package/libv4l/libv4l.mk	2020-08-15 19:46:22.332498415 -0700
++++ b/package/libv4l/libv4l.mk	2020-08-15 19:45:30.646690634 -0700
+@@ -70,4 +70,6 @@
+ 
+ LIBV4L_CONF_ENV += LIBS="$(LIBV4L_LIBS)"
+ 
++LIBV4L_LIBS += -lpthread
++
+ $(eval $(autotools-package))

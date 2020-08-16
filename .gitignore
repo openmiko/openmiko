@@ -1,5 +1,5 @@
 fs/opt/version
-_build/
+build/
 .DS_Store
 sharedfiles
 output

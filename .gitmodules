@@ -1,0 +1,3 @@
+[submodule "buildroot_output"]
+	path = buildroot_output
+	url = git@github.com:openmiko/buildroot_output.git

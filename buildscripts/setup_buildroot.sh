@@ -6,7 +6,11 @@ set -e
 
 cd /openmiko/build/buildroot-2016.02
 
-# Copy over custom packages
+# Copy over custom packages removing standard ones we don't want to use
+
+# ffmpeg doesn't seem to build out of the box
+rm -rf /openmiko/build/buildroot-2016.02/package/ffmpeg
+
 cp -r /src/custompackages/package/* /openmiko/build/buildroot-2016.02/package/
 
 patch -p1 < /src/patches/add_fp_no_fused_madd.patch

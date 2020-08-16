@@ -1,0 +1,10 @@
+--- uboot/include/configs/isvp_t20.h	2020-08-01 23:36:41.613057238 +0000
++++ uboot_/include/configs/isvp_t20.h	2020-08-01 23:37:26.022475948 +0000
+@@ -287,6 +287,7 @@
+ #define CONFIG_CMD_PING
+ #define CONFIG_CMD_BOOTD	/* bootd			*/
+ #define CONFIG_CMD_SAVEENV	/* saveenv			*/
++#define CONFIG_CMD_DHCP		/* dhcp				*/
+ 
+ #define CONFIG_CMD_CONSOLE	/* coninfo			*/
+ #define CONFIG_CMD_ECHO		/* echo arguments		*/

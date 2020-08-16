@@ -1,0 +1,20 @@
+--- a/common/cmd_misc.c	2019-04-22 03:20:20.141966000 +0200
++++ b/common/cmd_misc.c	2019-04-22 03:20:43.278204371 +0200
+@@ -35,7 +35,7 @@
+ 	if (argc != 2)
+ 		return CMD_RET_USAGE;
+ 
+-	delay = simple_strtoul(argv[1], NULL, 10) * CONFIG_SYS_HZ;
++	delay = simple_strtoul(argv[1], NULL, 10) * CONFIG_SYS_HZ/1000;
+ 
+ 	while (get_timer(start) < delay) {
+ 		if (ctrlc())
+@@ -51,7 +51,7 @@
+ 	sleep ,    2,    1,     do_sleep,
+ 	"delay execution for some time",
+ 	"N\n"
+-	"    - delay execution for N seconds (N is _decimal_ !!!)"
++	"    - delay execution for N milliseconds (N is _decimal_ !!!)"
+ );
+ 
+ #ifdef CONFIG_CMD_TIMER

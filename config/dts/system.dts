@@ -1,0 +1,21 @@
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+
+gpio1: gpio1 {
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+leds {
+	compatible = "gpio-leds";
+
+	charger-led {
+		gpios = <&gpio1 2 GPIO_ACTIVE_HIGH>;
+		linux,default-trigger = "mmc";
+	};
+};
+
+};

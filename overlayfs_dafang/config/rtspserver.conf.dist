@@ -1,0 +1,56 @@
+#######################################################################
+# Edit this file and move it to /system/sdcard/config/rtspserver.conf #
+# if you need to add options, otherwise defaults will be used         #
+#######################################################################
+
+# Configure RTSP Servers
+# Use /system/sdcard/bin/v4l2rtspserver-master -h to see available options
+
+LOG=false
+LOGDIR="/tmp"
+LOGPATH="$LOGDIR/v4l2rtspserver-master.log"
+
+PORT=8554
+
+USERNAME=
+USERPASSWORD=
+
+# H264 RTSP server options
+# Examples:
+# RTSPH264OPTS="-W960 -H540"
+# To enable authentication:
+# RTSPH264OPTS="-U user:password"
+RTSPH264OPTS=""
+
+# MJPEG RTSP server options
+# Examples:
+# RTSPMJPEGOPTS="-W960 -H540"
+# To enable authentication:
+# RTSPMJPEGOPTS="-U user:password"
+RTSPMJPEGOPTS=""
+
+# Enable multicast stream
+# Example:
+# MULTICASTDEST="239.1.2.3:23912"
+MULTICASTDEST=""
+
+# Video
+BITRATE=5000
+# Framerate
+FRAMERATE_DEN=1
+FRAMERATE_NUM=25
+# Video format: (0 = FixedQp, 1 = CBR, 2 = VBR, 3 = SMART, default = 2)
+VIDEOFORMAT=2
+
+# AudioFormat
+# Can be: OPUS | MP3 | PCM | PCMU
+AUDIOFORMAT=MP3
+# Audio sampling rate
+AUDIOINBR=16000
+# Audio streaming sampling rate
+AUDIOOUTBR=44100
+HWVOLUME=70
+SWVOLUME=-1
+FILTER=4
+HIGHPASSFILTER=ON
+AECFILTER=ON

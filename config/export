@@ -1,0 +1,2 @@
+# This is the /etc/export file copied into the docker container
+/rootfs *(rw,sync,no_subtree_check)

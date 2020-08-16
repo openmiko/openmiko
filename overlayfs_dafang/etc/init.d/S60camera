@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+# Start video and camera
+#
+
+case "$1" in
+  start)
+	echo "Adding necessary camera modules"
+	modprobe sinfo
+	modprobe tx-isp isp_clk=100000000
+
+	# Turn off the infared filter
+	echo 0 > /sys/class/gpio/gpio25/value
+	echo 1 > /sys/class/gpio/gpio26/value
+
+	/usr/bin/v4l2rtspserver-v0.1.3 &
+
+	;;
+  stop)
+	;;
+  restart|reload)
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

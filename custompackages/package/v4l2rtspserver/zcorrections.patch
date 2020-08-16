@@ -1,0 +1,119 @@
+diff -Nura v4l2rtspserver-v0.1.3/inc/ConfigReader.h v4l2rtspserver-v0.1.3_mod/inc/ConfigReader.h
+--- v4l2rtspserver-v0.1.3/inc/ConfigReader.h	2019-02-09 18:13:27.226447000 +0100
++++ v4l2rtspserver-v0.1.3_mod/inc/ConfigReader.h	2019-02-11 15:46:05.763361352 +0100
+@@ -33,6 +33,11 @@
+     int getRtspPort();
+     char* getRtspUrl();
+     int getRtspMode();
++    char *getFontMonoSrc();
++    char *getFontSansSrc();
++    int getCaptureJpeg();
++    int getVideoQuality();
++    int getVideoMaxSceneCnt();
+ 
+     bool getAudioEnabled();
+     INIReader *reader;
+@@ -47,4 +52,4 @@
+  };
+ 
+ 
+-#endif
+\ No newline at end of file
++#endif
+diff -Nura v4l2rtspserver-v0.1.3/src/ConfigReader.cpp v4l2rtspserver-v0.1.3_mod/src/ConfigReader.cpp
+--- v4l2rtspserver-v0.1.3/src/ConfigReader.cpp	2019-02-09 18:13:27.242447000 +0100
++++ v4l2rtspserver-v0.1.3_mod/src/ConfigReader.cpp	2019-02-11 15:45:42.457937880 +0100
+@@ -67,3 +67,25 @@
+ int ConfigReader::getRtspMode(){
+     return reader->GetInteger("RTSP","Mode",1);
+ }
++
++char* ConfigReader::getFontMonoSrc(){
++    return strdup(reader->Get("FONT", "Mono", "").c_str());
++}
++
++char* ConfigReader::getFontSansSrc(){
++    return strdup(reader->Get("FONT", "Sans", "").c_str());
++}
++
++
++int ConfigReader::getCaptureJpeg(){
++    return reader->GetBoolean("CAPTURE","Jpeg",false);
++}
++
++int ConfigReader::getVideoQuality(){
++    return reader->GetInteger("Video","Quality",2);
++}
++
++int ConfigReader::getVideoMaxSceneCnt(){
++    return reader->GetInteger("Video","MaxSceneCnt",6);
++}
++
+diff -Nura v4l2rtspserver-v0.1.3/src/ImpEncoder.cpp v4l2rtspserver-v0.1.3_mod/src/ImpEncoder.cpp
+--- v4l2rtspserver-v0.1.3/src/ImpEncoder.cpp	2019-02-09 18:13:27.243447000 +0100
++++ v4l2rtspserver-v0.1.3_mod/src/ImpEncoder.cpp	2019-02-11 21:35:27.912717895 +0100
+@@ -696,20 +696,20 @@
+     //m_osdOn = reader.GetBoolean("Configuration","OSD",true);
+     if (m_osdOn == true) {
+     LOG_S(INFO) << "OSD activated";
+-    //fontMono = strdup(reader.Get("Configuration", "FontFixedWidth", "").c_str());
+-    //fontSans = strdup(reader.Get("Configuration", "FontRegular", "").c_str());
++    fontMono = ConfigReader::instance().getFontMonoSrc();
++    fontSans = ConfigReader::instance().getFontSansSrc();
+     } else {
+     LOG_S(INFO) << "OSD deactivated";
+     }
+-    //m_jpegOn = reader.GetBoolean("Configuration","JPEG",true);
++    m_jpegOn = ConfigReader::instance().getCaptureJpeg();
+     if (m_jpegOn == true) {
+         LOG_S(INFO) << "JPEG capture activated";
+     } else {
+         LOG_S(INFO) << "JPEG capture deactivated";
+     }
+     //skiptype = reader.GetInteger("Video", "SkipType", 0);
+-    //quality = reader.GetInteger("Video", "Quality", 2);
+-    //maxSameSceneCnt = reader.GetInteger("Video", "maxSameSceneCnt", 6);
++    quality = ConfigReader::instance().getVideoQuality(); //reader.GetInteger("Video", "Quality", 2);
++    maxSameSceneCnt = ConfigReader::instance().getVideoMaxSceneCnt(); //reader.GetInteger("Video", "maxSameSceneCnt", 6);
+     LOG_S(INFO) << "Video settings: skip:" << skiptype << " quality:" << quality << " maxSameSceneCnt:" << maxSameSceneCnt;
+ 
+ 
+@@ -1346,7 +1346,7 @@
+     enc_attr = &channel_attr.encAttr;
+     enc_attr->enType = PT_H264;
+     enc_attr->bufSize = 0;
+-    enc_attr->profile = 1;
++    enc_attr->profile = 0;
+     enc_attr->picWidth = imp_chn_attr_tmp->picWidth;
+     enc_attr->picHeight = imp_chn_attr_tmp->picHeight;
+     rc_attr = &channel_attr.rcAttr;
+@@ -1354,13 +1354,13 @@
+ 
+ 
+ 
+-    rc_attr->maxGop = 2 * 25 / 1;
++    //rc_attr->maxGop = 2 * 25 / 1;
+     SharedMem &mem = SharedMem::instance();
+     mem.readConfig();
+     encoderMode = ConfigReader::instance().getEncoderMode();
+ 
+     int bitrate = ConfigReader::instance().getBitrate();
+-       LOG_S(INFO) << "Using Bitrate:" + bitrate;
++       LOG_S(INFO) << "Using Bitrate:" << bitrate;
+     if (encoderMode == ENC_RC_MODE_CBR) {
+         LOG_S(INFO) << "Using CBR mode.";
+         rc_attr->attrRcMode.rcMode = ENC_RC_MODE_CBR;
+diff -Nura v4l2rtspserver-v0.1.3/src/main.cpp v4l2rtspserver-v0.1.3_mod/src/main.cpp
+--- v4l2rtspserver-v0.1.3/src/main.cpp	2019-02-09 18:13:27.244447000 +0100
++++ v4l2rtspserver-v0.1.3_mod/src/main.cpp	2019-02-11 22:21:17.329801273 +0100
+@@ -395,8 +395,8 @@
+ 
+         } else if (videoFormat == V4L2_PIX_FMT_H264) {
+             params.mode = IMP_MODE_H264_SNAP;
+-            MPEG2TransportStreamFromESSource::maxInputESFrameSize += 4820;
+-            OutPacketBuffer::maxSize = 600000;
++            //MPEG2TransportStreamFromESSource::maxInputESFrameSize += 4820;
++            OutPacketBuffer::maxSize = 250000;
+ 
+         } else {
+             LOG_S(FATAL) << "Unrecognized Format ";

@@ -1,0 +1,3470 @@
+diff -Nura kernel-3.10.14_tx-isp/drivers/media/platform/Makefile kernel-3.10.14_sensors/drivers/media/platform/Makefile
+--- kernel-3.10.14_tx-isp/drivers/media/platform/Makefile	2019-01-26 17:01:01.238365554 +0100
++++ kernel-3.10.14_sensors/drivers/media/platform/Makefile	2019-01-26 18:30:18.633414071 +0100
+@@ -53,3 +53,10 @@
+ ccflags-y += -I$(srctree)/drivers/media/i2c
+ 
+ obj-$(CONFIG_VIDEO_TX_ISP)		+= tx-isp/
++
++obj-$(CONFIG_VIDEO_TX_ISP)		+= sensors/jxf22/
++
++obj-$(CONFIG_VIDEO_TX_ISP)		+= sensors/ps5250/
++
++obj-$(CONFIG_VIDEO_TX_ISP)		+= sensors/sensor_info/
++
+diff -Nura kernel-3.10.14_tx-isp/drivers/media/platform/sensors/jxf22/jxf22.c kernel-3.10.14_sensors/drivers/media/platform/sensors/jxf22/jxf22.c
+--- kernel-3.10.14_tx-isp/drivers/media/platform/sensors/jxf22/jxf22.c	1970-01-01 01:00:00.000000000 +0100
++++ kernel-3.10.14_sensors/drivers/media/platform/sensors/jxf22/jxf22.c	2018-03-20 12:23:26.000000000 +0100
+@@ -0,0 +1,921 @@
++/*
++ * jxf22.c
++ *
++ * Copyright (C) 2012 Ingenic Semiconductor Co., Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#define DEBUG
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/delay.h>
++#include <linux/gpio.h>
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <sensor-common.h>
++#include <apical-isp/apical_math.h>
++#include <linux/proc_fs.h>
++#include <soc/gpio.h>
++
++#define JXF22_CHIP_ID_H	(0x0f)
++#define JXF22_CHIP_ID_L	(0x22)
++#define JXF22_REG_END		0xff
++#define JXF22_REG_DELAY	0xfe
++#define JXF22_SUPPORT_SCLK (81000000)
++#define SENSOR_OUTPUT_MAX_FPS 30
++#define SENSOR_OUTPUT_MIN_FPS 5
++
++static int reset_gpio = GPIO_PA(18);
++module_param(reset_gpio, int, S_IRUGO);
++MODULE_PARM_DESC(reset_gpio, "Reset GPIO NUM");
++
++static int pwdn_gpio = -1;
++module_param(pwdn_gpio, int, S_IRUGO);
++MODULE_PARM_DESC(pwdn_gpio, "Power down GPIO NUM");
++
++static int sensor_gpio_func = DVP_PA_LOW_10BIT;
++module_param(sensor_gpio_func, int, S_IRUGO);
++MODULE_PARM_DESC(sensor_gpio_func, "Sensor GPIO function");
++
++static int data_interface = TX_SENSOR_DATA_INTERFACE_DVP;
++module_param(data_interface, int, S_IRUGO);
++MODULE_PARM_DESC(data_interface, "Sensor Date interface");
++
++struct regval_list {
++	unsigned char reg_num;
++	unsigned char value;
++};
++
++/*
++ * the part of driver maybe modify about different sensor and different board.
++ */
++struct again_lut {
++	unsigned int value;
++	unsigned int gain;
++};
++
++struct again_lut jxf22_again_lut[] = {
++	{0x0,  0 },
++	{0x1,  5731 },
++	{0x2,  11136},
++	{0x3,  16248},
++	{0x4,  21097},
++	{0x5,  25710},
++	{0x6,  30109},
++	{0x7,  34312},
++	{0x8,  38336},
++	{0x9,  42195},
++	{0xa,  45904},
++	{0xb,  49472},
++	{0xc,  52910},
++	{0xd,  56228},
++	{0xe,  59433},
++	{0xf,  62534},
++	{0x10,  65536},
++	{0x11,	71267},
++	{0x12,	76672},
++	{0x13,	81784},
++	{0x14,	86633},
++	{0x15,	91246},
++	{0x16,	95645},
++	{0x17,	99848},
++	{0x18,  103872},
++	{0x19,	107731},
++	{0x1a,	111440},
++	{0x1b,	115008},
++	{0x1c,	118446},
++	{0x1d,	121764},
++	{0x1e,	124969},
++	{0x1f,	128070},
++	{0x20,	131072},
++	{0x21,	136803},
++	{0x22,	142208},
++	{0x23,	147320},
++	{0x24,	152169},
++	{0x25,	156782},
++	{0x26,	161181},
++	{0x27,	165384},
++	{0x28,	169408},
++	{0x29,	173267},
++	{0x2a,	176976},
++	{0x2b,	180544},
++	{0x2c,	183982},
++	{0x2d,	187300},
++	{0x2e,	190505},
++	{0x2f,	193606},
++	{0x30,	196608},
++	{0x31,	202339},
++	{0x32,	207744},
++	{0x33,	212856},
++	{0x34,	217705},
++	{0x35,	222318},
++	{0x36,	226717},
++	{0x37,	230920},
++	{0x38,	234944},
++	{0x39,	238803},
++	{0x3a,	242512},
++	{0x3b,	246080},
++	{0x3c,	249518},
++	{0x3d,	252836},
++	{0x3e,	256041},
++	{0x3f,	259142},
++	{0x40,	262144},
++	{0x41,	267875},
++	{0x42,	273280},
++	{0x43,	278392},
++	{0x44,	283241},
++	{0x45,	287854},
++	{0x46,	292253},
++	{0x47,	296456},
++	{0x48,	300480},
++	{0x49,	304339},
++	{0x4a,	308048},
++	{0x4b,	311616},
++	{0x4c,	315054},
++	{0x4d,	318372},
++	{0x4e,	321577},
++	{0x4f,	324678},
++};
++
++struct tx_isp_sensor_attribute jxf22_attr;
++
++unsigned int jxf22_alloc_again(unsigned int isp_gain, unsigned char shift, unsigned int *sensor_again)
++{
++	struct again_lut *lut = jxf22_again_lut;
++
++	while(lut->gain <= jxf22_attr.max_again) {
++		if(isp_gain == 0) {
++			*sensor_again = 0;
++			return 0;
++		}
++		else if(isp_gain < lut->gain) {
++			*sensor_again = (lut - 1)->value;
++			return (lut - 1)->gain;
++		}
++		else{
++			if((lut->gain == jxf22_attr.max_again) && (isp_gain >= lut->gain)) {
++				*sensor_again = lut->value;
++				return lut->gain;
++			}
++		}
++
++		lut++;
++	}
++
++	return isp_gain;
++}
++
++unsigned int jxf22_alloc_dgain(unsigned int isp_gain, unsigned char shift, unsigned int *sensor_dgain)
++{
++	return isp_gain;
++}
++
++struct tx_isp_sensor_attribute jxf22_attr={
++	.name = "jxf22",
++	.chip_id = 0xf22,
++	.cbus_type = TX_SENSOR_CONTROL_INTERFACE_I2C,
++	.cbus_mask = V4L2_SBUS_MASK_SAMPLE_8BITS | V4L2_SBUS_MASK_ADDR_8BITS,
++	.cbus_device = 0x40,
++	.dbus_type = TX_SENSOR_DATA_INTERFACE_DVP,
++	.dvp = {
++		.mode = SENSOR_DVP_HREF_MODE,
++		.blanking = {
++			.vblanking = 0,
++			.hblanking = 0,
++		},
++	},
++	.max_again = 324678,
++	.max_dgain = 0,
++	.min_integration_time = 2,
++	.min_integration_time_native = 2,
++	.max_integration_time_native = 1350 - 4,
++	.integration_time_limit = 1350 - 4,
++	.total_width = 2400,
++	.total_height = 1350,
++	.max_integration_time = 1350 - 4,
++	.integration_time_apply_delay = 2,
++	.again_apply_delay = 2,
++	.dgain_apply_delay = 0,
++	.sensor_ctrl.alloc_again = jxf22_alloc_again,
++	.sensor_ctrl.alloc_dgain = jxf22_alloc_dgain,
++	//	void priv; /* point to struct tx_isp_sensor_board_info */
++};
++
++
++static struct regval_list jxf22_init_regs_1920_1080_25fps_mipi[] = {
++
++{JXF22_REG_END, 0x00},	/* END MARKER */
++};
++
++static struct regval_list jxf22_init_regs_1920_1080_25fps_dvp[] = {
++	{0x12, 0x40},
++	{0x0E, 0x11},
++	{0x0F, 0x00},
++	{0x10, 0x36},
++	{0x11, 0x80},
++	{0x5F, 0x01},
++	{0x60, 0x0A},
++	{0x19, 0x20},
++	{0x48, 0x05},
++	{0x20, 0xB0},//HTS L
++	{0x21, 0x04},//HTS H
++	{0x22, 0x46},
++	{0x23, 0x05},
++	/*{0x22, 0x56},*/
++	/*{0x23, 0x04},*/
++	{0x24, 0xC0},
++	{0x25, 0x38},
++	{0x26, 0x43},
++	{0x27, 0xcc},
++	{0x28, 0x18},
++	{0x29, 0x01},
++	{0x2A, 0xC0},
++	{0x2B, 0x21},
++	{0x2C, 0x04},
++	{0x2D, 0x01},
++	{0x2E, 0x15},
++	{0x2F, 0x44},
++	{0x41, 0xCC},
++	{0x42, 0x03},
++	{0x39, 0x90},
++	{0x1D, 0xFF},
++	{0x1E, 0x9F},
++	{0x6C, 0x90},
++	{0x30, 0x8C},
++	{0x31, 0x0C},
++	{0x32, 0xF0},
++	{0x33, 0x0C},
++	{0x34, 0x1F},
++	{0x35, 0xE3},
++	{0x36, 0x0E},
++	{0x37, 0x34},
++	{0x38, 0x13},
++	{0x3A, 0x08},
++	{0x3B, 0x30},
++	{0x3C, 0xC0},
++	{0x3D, 0x00},
++	{0x3E, 0x00},
++	{0x3F, 0x00},
++	{0x40, 0x00},
++	{0x6F, 0x03},
++	{0x0D, 0x14},//Driver Capability
++	{0x56, 0x32},
++	{0x5A, 0x20},
++	{0x5B, 0xB3},
++	{0x5C, 0xF7},
++	{0x5D, 0xF0},
++	{0x62, 0x80},
++	{0x63, 0x80},
++	{0x64, 0x00},
++	{0x67, 0x75},
++	{0x68, 0x04},
++	{0x6A, 0x4D},
++	{0x8F, 0x18},
++	{0x91, 0x04},
++	{0x0C, 0x00},
++	{0x59, 0x97},
++	{0x4A, 0x05},
++	{0x49, 0x10},
++	{0x50, 0x02},
++	{0x47, 0x22},
++	{0x7E, 0xCD},
++	{0x7F, 0x52},
++	{0x7B, 0x57},
++	{0x7C, 0x28},
++	{0x80, 0x00},
++	{0x13, 0x81},
++	{0x93, 0x5C},
++	{0x45, 0x89},
++	/* sleep 500 */
++	{JXF22_REG_DELAY, 250},
++	{JXF22_REG_DELAY, 250},
++	{0x45, 0x09},
++	{0x1F, 0x01},
++	{JXF22_REG_END, 0x00},	/* END MARKER */
++};
++
++/*
++ * the order of the jxf22_win_sizes is [full_resolution, preview_resolution].
++ */
++static struct tx_isp_sensor_win_setting jxf22_win_sizes[] = {
++	/* 1280*1080 */
++	{
++		.width		= 1920,
++		.height		= 1080,
++		.fps		= 25 << 16 | 1,
++		.mbus_code	= V4L2_MBUS_FMT_SBGGR10_1X10,
++		.colorspace	= V4L2_COLORSPACE_SRGB,
++		.regs 		= jxf22_init_regs_1920_1080_25fps_dvp,
++	}
++};
++
++static enum v4l2_mbus_pixelcode jxf22_mbus_code[] = {
++	V4L2_MBUS_FMT_SBGGR10_1X10,
++};
++
++/*
++ * the part of driver was fixed.
++ */
++
++static struct regval_list jxf22_stream_on_dvp[] = {
++	{0x12, 0x00},
++	{JXF22_REG_END, 0x00},	/* END MARKER */
++};
++
++static struct regval_list jxf22_stream_off_dvp[] = {
++	{0x12, 0x40},
++	{JXF22_REG_END, 0x00},	/* END MARKER */
++};
++
++static struct regval_list jxf22_stream_on_mipi[] = {
++
++	{JXF22_REG_END, 0x00},	/* END MARKER */
++};
++
++static struct regval_list jxf22_stream_off_mipi[] = {
++	{JXF22_REG_END, 0x00},	/* END MARKER */
++};
++
++int jxf22_read(struct v4l2_subdev *sd, unsigned char reg,
++		unsigned char *value)
++{
++	struct i2c_client *client = v4l2_get_subdevdata(sd);
++	struct i2c_msg msg[2] = {
++		[0] = {
++			.addr	= client->addr,
++			.flags	= 0,
++			.len	= 1,
++			.buf	= &reg,
++		},
++		[1] = {
++			.addr	= client->addr,
++			.flags	= I2C_M_RD,
++			.len	= 1,
++			.buf	= value,
++		}
++	};
++	int ret;
++	ret = i2c_transfer(client->adapter, msg, 2);
++	if (ret > 0)
++		ret = 0;
++
++	return ret;
++}
++
++int jxf22_write(struct v4l2_subdev *sd, unsigned char reg,
++		unsigned char value)
++{
++	struct i2c_client *client = v4l2_get_subdevdata(sd);
++	unsigned char buf[2] = {reg, value};
++	struct i2c_msg msg = {
++		.addr	= client->addr,
++		.flags	= 0,
++		.len	= 2,
++		.buf	= buf,
++	};
++	int ret;
++	ret = i2c_transfer(client->adapter, &msg, 1);
++	if (ret > 0)
++		ret = 0;
++
++	return ret;
++}
++
++static int jxf22_read_array(struct v4l2_subdev *sd, struct regval_list *vals)
++{
++	int ret;
++	unsigned char val;
++	while (vals->reg_num != JXF22_REG_END) {
++		if (vals->reg_num == JXF22_REG_DELAY) {
++				msleep(vals->value);
++		} else {
++			ret = jxf22_read(sd, vals->reg_num, &val);
++			if (ret < 0)
++				return ret;
++		}
++		vals++;
++	}
++	return 0;
++}
++static int jxf22_write_array(struct v4l2_subdev *sd, struct regval_list *vals)
++{
++	int ret;
++	while (vals->reg_num != JXF22_REG_END) {
++		if (vals->reg_num == JXF22_REG_DELAY) {
++				msleep(vals->value);
++		} else {
++			ret = jxf22_write(sd, vals->reg_num, vals->value);
++			if (ret < 0)
++				return ret;
++		}
++		vals++;
++	}
++	return 0;
++}
++
++static int jxf22_reset(struct v4l2_subdev *sd, u32 val)
++{
++	return 0;
++}
++
++static int jxf22_detect(struct v4l2_subdev *sd, unsigned int *ident)
++{
++	unsigned char v;
++	int ret;
++
++	ret = jxf22_read(sd, 0x0a, &v);
++	pr_debug("-----%s: %d ret = %d, v = 0x%02x\n", __func__, __LINE__, ret,v);
++	if (ret < 0)
++		return ret;
++	if (v != JXF22_CHIP_ID_H)
++		return -ENODEV;
++	*ident = v;
++
++	ret = jxf22_read(sd, 0x0b, &v);
++	pr_debug("-----%s: %d ret = %d, v = 0x%02x\n", __func__, __LINE__, ret,v);
++	if (ret < 0)
++		return ret;
++
++	if (v != JXF22_CHIP_ID_L)
++		return -ENODEV;
++	*ident = (*ident << 8) | v;
++	return 0;
++}
++
++static int jxf22_set_integration_time(struct v4l2_subdev *sd, int value)
++{
++	int ret = 0;
++	unsigned int expo = value;
++	ret = jxf22_write(sd,  0x01, (unsigned char)(expo & 0xff));
++	ret += jxf22_write(sd, 0x02, (unsigned char)((expo >> 8) & 0xff));
++	if (ret < 0)
++		return ret;
++	return 0;
++
++}
++
++static int jxf22_set_analog_gain(struct v4l2_subdev *sd, int value)
++{
++	int ret = 0;
++
++	ret += jxf22_write(sd, 0x00, (unsigned char)(value & 0x7f));
++	if (ret < 0)
++		return ret;
++	return 0;
++}
++
++static int jxf22_set_digital_gain(struct v4l2_subdev *sd, int value)
++{
++	return 0;
++}
++
++static int jxf22_get_black_pedestal(struct v4l2_subdev *sd, int value)
++{
++	return 0;
++}
++
++static int jxf22_init(struct v4l2_subdev *sd, u32 enable)
++{
++	struct tx_isp_sensor *sensor = (container_of(sd, struct tx_isp_sensor, sd));
++	struct tx_isp_notify_argument arg;
++	struct tx_isp_sensor_win_setting *wsize = &jxf22_win_sizes[0];
++	int ret = 0;
++	if(!enable)
++		return ISP_SUCCESS;
++	sensor->video.mbus.width = wsize->width;
++	sensor->video.mbus.height = wsize->height;
++	sensor->video.mbus.code = wsize->mbus_code;
++	sensor->video.mbus.field = V4L2_FIELD_NONE;
++	sensor->video.mbus.colorspace = wsize->colorspace;
++	sensor->video.fps = wsize->fps;
++	ret = jxf22_write_array(sd, wsize->regs);
++	if (ret)
++		return ret;
++	arg.value = (int)&sensor->video;
++	sd->v4l2_dev->notify(sd, TX_ISP_NOTIFY_SYNC_VIDEO_IN, &arg);
++	sensor->priv = wsize;
++	return 0;
++}
++
++static int jxf22_s_stream(struct v4l2_subdev *sd, int enable)
++{
++	int ret = 0;
++
++	if (enable) {
++		if (data_interface == TX_SENSOR_DATA_INTERFACE_DVP){
++			ret = jxf22_write_array(sd, jxf22_stream_on_dvp);
++		} else if (data_interface == TX_SENSOR_DATA_INTERFACE_MIPI){
++			ret = jxf22_write_array(sd, jxf22_stream_on_mipi);
++
++		}else{
++			printk("Don't support this Sensor Data interface\n");
++		}
++		pr_debug("jxf22 stream on\n");
++
++	}
++	else {
++		if (data_interface == TX_SENSOR_DATA_INTERFACE_DVP){
++			ret = jxf22_write_array(sd, jxf22_stream_off_dvp);
++		} else if (data_interface == TX_SENSOR_DATA_INTERFACE_MIPI){
++			ret = jxf22_write_array(sd, jxf22_stream_off_mipi);
++
++		}else{
++			printk("Don't support this Sensor Data interface\n");
++		}
++		pr_debug("jxf22 stream off\n");
++	}
++	return ret;
++}
++
++static int jxf22_g_parm(struct v4l2_subdev *sd, struct v4l2_streamparm *parms)
++{
++	return 0;
++}
++
++static int jxf22_s_parm(struct v4l2_subdev *sd, struct v4l2_streamparm *parms)
++{
++	return 0;
++}
++
++static int jxf22_set_fps(struct tx_isp_sensor *sensor, int fps)
++{
++	struct v4l2_subdev *sd = &sensor->sd;
++	struct tx_isp_notify_argument arg;
++	int ret = 0;
++	unsigned int sclk = 0;
++	unsigned int hts = 0;
++	unsigned int vts = 0;
++	unsigned char val = 0;
++	unsigned int newformat = 0; //the format is 24.8
++
++	newformat = (((fps >> 16) / (fps & 0xffff)) << 8) + ((((fps >> 16) % (fps & 0xffff)) << 8) / (fps & 0xffff));
++	if(newformat > (SENSOR_OUTPUT_MAX_FPS << 8) || newformat < (SENSOR_OUTPUT_MIN_FPS << 8)) {
++		printk("warn: fps(%d) no in range\n", fps);
++		return -1;
++	}
++	sclk = JXF22_SUPPORT_SCLK;
++
++	val = 0;
++	ret += jxf22_read(sd, 0x21, &val);
++	hts = val<<8;
++	val = 0;
++	ret += jxf22_read(sd, 0x20, &val);
++	hts |= val;
++	hts *= 2;
++	if (0 != ret) {
++		printk("err: jxf22 read err\n");
++		return ret;
++	}
++
++	vts = sclk * (fps & 0xffff) / hts / ((fps & 0xffff0000) >> 16);
++
++	jxf22_write(sd, 0xc0, 0x22);
++	jxf22_write(sd, 0xc1, (unsigned char)(vts & 0xff));
++	jxf22_write(sd, 0xc2, 0x23);
++	jxf22_write(sd, 0xc3, (unsigned char)(vts >> 8));
++	ret = jxf22_read(sd, 0x1f, &val);
++	pr_debug("before register 0x1f value : 0x%02x\n", val);
++	if(ret < 0)
++		return -1;
++	val |= (1 << 7); //set bit[7],  register group write function,  auto clean
++	jxf22_write(sd, 0x1f, val);
++	pr_debug("after register 0x1f value : 0x%02x\n", val);
++
++	if (0 != ret) {
++		printk("err: jxf22_write err\n");
++		return ret;
++	}
++	sensor->video.fps = fps;
++	sensor->video.attr->max_integration_time_native = vts - 4;
++	sensor->video.attr->integration_time_limit = vts - 4;
++	sensor->video.attr->total_height = vts;
++	sensor->video.attr->max_integration_time = vts - 4;
++	arg.value = (int)&sensor->video;
++	sd->v4l2_dev->notify(sd, TX_ISP_NOTIFY_SYNC_VIDEO_IN, &arg);
++	return ret;
++}
++
++static int jxf22_set_mode(struct tx_isp_sensor *sensor, int value)
++{
++	struct tx_isp_notify_argument arg;
++	struct v4l2_subdev *sd = &sensor->sd;
++	struct tx_isp_sensor_win_setting *wsize = NULL;
++	int ret = ISP_SUCCESS;
++
++	if(value == TX_ISP_SENSOR_FULL_RES_MAX_FPS){
++		wsize = &jxf22_win_sizes[0];
++	}else if(value == TX_ISP_SENSOR_PREVIEW_RES_MAX_FPS){
++		wsize = &jxf22_win_sizes[0];
++	}
++
++	if(wsize){
++		sensor->video.mbus.width = wsize->width;
++		sensor->video.mbus.height = wsize->height;
++		sensor->video.mbus.code = wsize->mbus_code;
++		sensor->video.mbus.field = V4L2_FIELD_NONE;
++		sensor->video.mbus.colorspace = wsize->colorspace;
++		sensor->video.fps = wsize->fps;
++		arg.value = (int)&sensor->video;
++		sd->v4l2_dev->notify(sd, TX_ISP_NOTIFY_SYNC_VIDEO_IN, &arg);
++	}
++	return ret;
++}
++static int jxf22_g_chip_ident(struct v4l2_subdev *sd,
++		struct v4l2_dbg_chip_ident *chip)
++{
++	struct i2c_client *client = v4l2_get_subdevdata(sd);
++	unsigned int ident = 0;
++	int ret = ISP_SUCCESS;
++	if(reset_gpio != -1){
++		ret = gpio_request(reset_gpio,"jxf22_reset");
++		if(!ret){
++			gpio_direction_output(reset_gpio, 1);
++			msleep(5);
++			gpio_direction_output(reset_gpio, 0);
++			msleep(15);
++			gpio_direction_output(reset_gpio, 1);
++			msleep(5);
++		}else{
++			printk("gpio requrest fail %d\n",reset_gpio);
++		}
++	}
++	if(pwdn_gpio != -1){
++		ret = gpio_request(pwdn_gpio,"jxf22_pwdn");
++		if(!ret){
++			gpio_direction_output(pwdn_gpio, 1);
++			msleep(150);
++			gpio_direction_output(pwdn_gpio, 0);
++			msleep(10);
++		}else{
++			printk("gpio requrest fail %d\n",pwdn_gpio);
++		}
++	}
++	ret = jxf22_detect(sd, &ident);
++	if (ret) {
++		v4l_err(client,
++				"chip found @ 0x%x (%s) is not an jxf22 chip.\n",
++				client->addr, client->adapter->name);
++		return ret;
++	}
++	v4l_info(client, "jxf22 chip found @ 0x%02x (%s)\n",
++			client->addr, client->adapter->name);
++	return v4l2_chip_ident_i2c_client(client, chip, ident, 0);
++}
++
++static int jxf22_s_power(struct v4l2_subdev *sd, int on)
++{
++
++	return 0;
++}
++static long jxf22_ops_private_ioctl(struct tx_isp_sensor *sensor, struct isp_private_ioctl *ctrl)
++{
++	struct v4l2_subdev *sd = &sensor->sd;
++	long ret = 0;
++	switch(ctrl->cmd){
++		case TX_ISP_PRIVATE_IOCTL_SENSOR_INT_TIME:
++			ret = jxf22_set_integration_time(sd, ctrl->value);
++			break;
++		case TX_ISP_PRIVATE_IOCTL_SENSOR_AGAIN:
++			ret = jxf22_set_analog_gain(sd, ctrl->value);
++			break;
++		case TX_ISP_PRIVATE_IOCTL_SENSOR_DGAIN:
++			ret = jxf22_set_digital_gain(sd, ctrl->value);
++			break;
++		case TX_ISP_PRIVATE_IOCTL_SENSOR_BLACK_LEVEL:
++			ret = jxf22_get_black_pedestal(sd, ctrl->value);
++			break;
++		case TX_ISP_PRIVATE_IOCTL_SENSOR_RESIZE:
++			ret = jxf22_set_mode(sensor,ctrl->value);
++			break;
++		case TX_ISP_PRIVATE_IOCTL_SUBDEV_PREPARE_CHANGE:
++			if (data_interface == TX_SENSOR_DATA_INTERFACE_DVP){
++				ret = jxf22_write_array(sd, jxf22_stream_off_dvp);
++			} else if (data_interface == TX_SENSOR_DATA_INTERFACE_MIPI){
++				ret = jxf22_write_array(sd, jxf22_stream_off_mipi);
++
++			}else{
++				printk("Don't support this Sensor Data interface\n");
++			}
++			break;
++		case TX_ISP_PRIVATE_IOCTL_SUBDEV_FINISH_CHANGE:
++			if (data_interface == TX_SENSOR_DATA_INTERFACE_DVP){
++				ret = jxf22_write_array(sd, jxf22_stream_on_dvp);
++			} else if (data_interface == TX_SENSOR_DATA_INTERFACE_MIPI){
++				ret = jxf22_write_array(sd, jxf22_stream_on_mipi);
++
++			}else{
++				printk("Don't support this Sensor Data interface\n");
++			}
++			break;
++		case TX_ISP_PRIVATE_IOCTL_SENSOR_FPS:
++			ret = jxf22_set_fps(sensor, ctrl->value);
++			break;
++		default:
++			pr_debug("do not support ctrl->cmd ====%d\n",ctrl->cmd);
++			break;;
++	}
++	return 0;
++}
++static long jxf22_ops_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
++{
++	struct tx_isp_sensor *sensor =container_of(sd, struct tx_isp_sensor, sd);
++	int ret;
++	switch(cmd){
++		case VIDIOC_ISP_PRIVATE_IOCTL:
++			ret = jxf22_ops_private_ioctl(sensor, arg);
++			break;
++		default:
++			return -1;
++			break;
++	}
++	return 0;
++}
++
++#ifdef CONFIG_VIDEO_ADV_DEBUG
++static int jxf22_g_register(struct v4l2_subdev *sd, struct v4l2_dbg_register *reg)
++{
++	struct i2c_client *client = v4l2_get_subdevdata(sd);
++	unsigned char val = 0;
++	int ret;
++
++	if (!v4l2_chip_match_i2c_client(client, &reg->match))
++		return -EINVAL;
++	if (!capable(CAP_SYS_ADMIN))
++		return -EPERM;
++	ret = jxf22_read(sd, reg->reg & 0xffff, &val);
++	reg->val = val;
++	reg->size = 2;
++	return ret;
++}
++
++static int jxf22_s_register(struct v4l2_subdev *sd, const struct v4l2_dbg_register *reg)
++{
++	struct i2c_client *client = v4l2_get_subdevdata(sd);
++
++	if (!v4l2_chip_match_i2c_client(client, &reg->match))
++		return -EINVAL;
++	if (!capable(CAP_SYS_ADMIN))
++		return -EPERM;
++	jxf22_write(sd, reg->reg & 0xffff, reg->val & 0xff);
++	return 0;
++}
++#endif
++
++static const struct v4l2_subdev_core_ops jxf22_core_ops = {
++	.g_chip_ident = jxf22_g_chip_ident,
++	.reset = jxf22_reset,
++	.init = jxf22_init,
++	.s_power = jxf22_s_power,
++	.ioctl = jxf22_ops_ioctl,
++#ifdef CONFIG_VIDEO_ADV_DEBUG
++	.g_register = jxf22_g_register,
++	.s_register = jxf22_s_register,
++#endif
++};
++
++static const struct v4l2_subdev_video_ops jxf22_video_ops = {
++	.s_stream = jxf22_s_stream,
++	.s_parm = jxf22_s_parm,
++	.g_parm = jxf22_g_parm,
++};
++
++static const struct v4l2_subdev_ops jxf22_ops = {
++	.core = &jxf22_core_ops,
++	.video = &jxf22_video_ops,
++};
++
++static int jxf22_probe(struct i2c_client *client,
++		const struct i2c_device_id *id)
++{
++	struct v4l2_subdev *sd;
++	struct tx_isp_video_in *video;
++	struct tx_isp_sensor *sensor;
++	struct tx_isp_sensor_win_setting *wsize = &jxf22_win_sizes[0];
++	int ret;
++
++	sensor = (struct tx_isp_sensor *)kzalloc(sizeof(*sensor), GFP_KERNEL);
++	if(!sensor){
++		printk("Failed to allocate sensor subdev.\n");
++		return -ENOMEM;
++	}
++	memset(sensor, 0 ,sizeof(*sensor));
++	/* request mclk of sensor */
++	sensor->mclk = clk_get(NULL, "cgu_cim");
++	if (IS_ERR(sensor->mclk)) {
++		printk("Cannot get sensor input clock cgu_cim\n");
++		goto err_get_mclk;
++	}
++	clk_set_rate(sensor->mclk, 24000000);
++	clk_enable(sensor->mclk);
++
++	ret = set_sensor_gpio_function(sensor_gpio_func);
++	if (ret < 0)
++		goto err_set_sensor_gpio;
++
++	jxf22_attr.dbus_type = data_interface;
++	if (data_interface == TX_SENSOR_DATA_INTERFACE_DVP){
++		wsize->regs = jxf22_init_regs_1920_1080_25fps_dvp;
++	} else if (data_interface == TX_SENSOR_DATA_INTERFACE_MIPI){
++		wsize->regs = jxf22_init_regs_1920_1080_25fps_mipi;
++	} else{
++		printk("Don't support this Sensor Data Output Interface.\n");
++		goto err_set_sensor_data_interface;
++	}
++#if 0
++	jxf22_attr.dvp.gpio = sensor_gpio_func;
++
++	switch(sensor_gpio_func){
++		case DVP_PA_LOW_10BIT:
++		case DVP_PA_HIGH_10BIT:
++			mbus = jxf22_mbus_code[0];
++			break;
++		case DVP_PA_12BIT:
++			mbus = jxf22_mbus_code[1];
++			break;
++		default:
++			goto err_set_sensor_gpio;
++	}
++
++	for(i = 0; i < ARRAY_SIZE(jxf22_win_sizes); i++)
++		jxf22_win_sizes[i].mbus_code = mbus;
++
++#endif
++	 /*
++		convert sensor-gain into isp-gain,
++	 */
++	jxf22_attr.max_again = 324678;
++	jxf22_attr.max_dgain = 0;
++	sd = &sensor->sd;
++	video = &sensor->video;
++	sensor->video.attr = &jxf22_attr;
++	sensor->video.vi_max_width = wsize->width;
++	sensor->video.vi_max_height = wsize->height;
++	v4l2_i2c_subdev_init(sd, client, &jxf22_ops);
++	v4l2_set_subdev_hostdata(sd, sensor);
++
++	pr_debug("probe ok ------->jxf22\n");
++	return 0;
++err_set_sensor_data_interface:
++err_set_sensor_gpio:
++	clk_disable(sensor->mclk);
++	clk_put(sensor->mclk);
++err_get_mclk:
++	kfree(sensor);
++
++	return -1;
++}
++
++static int jxf22_remove(struct i2c_client *client)
++{
++	struct v4l2_subdev *sd = i2c_get_clientdata(client);
++	struct tx_isp_sensor *sensor = v4l2_get_subdev_hostdata(sd);
++
++	if(reset_gpio != -1)
++		gpio_free(reset_gpio);
++	if(pwdn_gpio != -1)
++		gpio_free(pwdn_gpio);
++
++	clk_disable(sensor->mclk);
++	clk_put(sensor->mclk);
++
++	v4l2_device_unregister_subdev(sd);
++	kfree(sensor);
++	return 0;
++}
++
++static const struct i2c_device_id jxf22_id[] = {
++	{ "jxf22", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, jxf22_id);
++
++static struct i2c_driver jxf22_driver = {
++	.driver = {
++		.owner	= THIS_MODULE,
++		.name	= "jxf22",
++	},
++	.probe		= jxf22_probe,
++	.remove		= jxf22_remove,
++	.id_table	= jxf22_id,
++};
++
++static __init int init_jxf22(void)
++{
++	return i2c_add_driver(&jxf22_driver);
++}
++
++static __exit void exit_jxf22(void)
++{
++	i2c_del_driver(&jxf22_driver);
++}
++
++module_init(init_jxf22);
++module_exit(exit_jxf22);
++
++MODULE_DESCRIPTION("A low-level driver for OmniVision jxf22 sensors");
++MODULE_LICENSE("GPL");
+diff -Nura kernel-3.10.14_tx-isp/drivers/media/platform/sensors/jxf22/Makefile kernel-3.10.14_sensors/drivers/media/platform/sensors/jxf22/Makefile
+--- kernel-3.10.14_tx-isp/drivers/media/platform/sensors/jxf22/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ kernel-3.10.14_sensors/drivers/media/platform/sensors/jxf22/Makefile	2019-01-26 17:38:10.609238656 +0100
+@@ -0,0 +1,19 @@
++
++ISP_DRIVER_DIR = drivers/media/platform/tx-isp
++
++MODULE_NAME := sensor_jxf22
++KBUILD_EXTRA_SYMBOLS := $(ISP_DRIVER_DIR)/Module.symvers
++EXTRA_CFLAGS += -I$(ISP_DRIVER_DIR)/include
++
++all: modules
++
++.PHONY: modules clean
++
++$(MODULE_NAME)-objs := jxf22.o
++obj-m := $(MODULE_NAME).o
++
++modules:
++	@$(MAKE) -C $(KDIR) M=$(shell pwd) $@
++
++clean:
++	@rm -rf *.o *~ .depend .*.cmd  *.mod.c .tmp_versions *.ko *.symvers modules.order
+diff -Nura kernel-3.10.14_tx-isp/drivers/media/platform/sensors/ps5250/Makefile kernel-3.10.14_sensors/drivers/media/platform/sensors/ps5250/Makefile
+--- kernel-3.10.14_tx-isp/drivers/media/platform/sensors/ps5250/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ kernel-3.10.14_sensors/drivers/media/platform/sensors/ps5250/Makefile	2019-01-26 17:38:03.558182832 +0100
+@@ -0,0 +1,19 @@
++
++ISP_DRIVER_DIR = drivers/media/platform/tx-isp
++
++MODULE_NAME := sensor_ps5250
++KBUILD_EXTRA_SYMBOLS := $(ISP_DRIVER_DIR)/Module.symvers
++EXTRA_CFLAGS += -I$(ISP_DRIVER_DIR)/include
++
++all: modules
++
++.PHONY: modules clean
++
++$(MODULE_NAME)-objs := ps5250.o
++obj-m := $(MODULE_NAME).o
++
++modules:
++	@$(MAKE) -C $(KDIR) M=$(shell pwd) $@
++
++clean:
++	@rm -rf *.o *~ .depend .*.cmd  *.mod.c .tmp_versions *.ko *.symvers modules.order
+diff -Nura kernel-3.10.14_tx-isp/drivers/media/platform/sensors/ps5250/ps5250.c kernel-3.10.14_sensors/drivers/media/platform/sensors/ps5250/ps5250.c
+--- kernel-3.10.14_tx-isp/drivers/media/platform/sensors/ps5250/ps5250.c	1970-01-01 01:00:00.000000000 +0100
++++ kernel-3.10.14_sensors/drivers/media/platform/sensors/ps5250/ps5250.c	2018-03-20 12:23:26.000000000 +0100
+@@ -0,0 +1,1603 @@
++/*
++ * ps5250.c
++ *
++ * Copyright (C) 2012 Ingenic Semiconductor Co., Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#define DEBUG
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/delay.h>
++#include <linux/gpio.h>
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <sensor-common.h>
++#include <apical-isp/apical_math.h>
++#include <linux/proc_fs.h>
++#include <soc/gpio.h>
++
++#define PS5250_CHIP_ID_H	(0x52)
++#define PS5250_CHIP_ID_L	(0x50)
++#define PS5250_REG_END		0xff
++#define PS5250_REG_DELAY	0xfe
++#define PS5250_BANK_REG		0xef
++
++#define PS5250_SUPPORT_PCLK (76000000)
++#define SENSOR_OUTPUT_MAX_FPS 30
++#define SENSOR_OUTPUT_MIN_FPS 5
++
++static int reset_gpio = GPIO_PA(18);
++module_param(reset_gpio, int, S_IRUGO);
++MODULE_PARM_DESC(reset_gpio, "Reset GPIO NUM");
++
++static int pwdn_gpio = -1;
++module_param(pwdn_gpio, int, S_IRUGO);
++MODULE_PARM_DESC(pwdn_gpio, "Power down GPIO NUM");
++
++static int sensor_gpio_func = DVP_PA_LOW_10BIT;
++module_param(sensor_gpio_func, int, S_IRUGO);
++MODULE_PARM_DESC(sensor_gpio_func, "Sensor GPIO function");
++
++struct regval_list {
++	unsigned char reg_num;
++	unsigned char value;
++};
++
++/*
++ * the part of driver maybe modify about different sensor and different board.
++ */
++struct again_lut {
++	unsigned int value;
++	unsigned int gain;
++};
++
++struct again_lut ps5250_again_lut[] = {
++	{0, 0},
++	{1, 5731},
++	{2, 11136},
++	{3, 16247},
++	/* start frome 1.25x */
++	{4, 21097},
++	{5, 25710},
++	{6, 30108},
++	{7, 34311},
++	{8, 38335},
++	{9, 42195},
++	{10, 45903},
++	{11, 49471},
++	{12, 52910},
++	{13, 56227},
++	{14, 59433},
++	{15, 62533},
++	{16, 65535},
++	{17, 71266},
++	{18, 76671},
++	{19, 81782},
++	{20, 86632},
++	{21, 91245},
++	{22, 95643},
++	{23, 99846},
++	{24, 103870},
++	{25, 107730},
++	{26, 111438},
++	{27, 115006},
++	{28, 118445},
++	{29, 121762},
++	{30, 124968},
++	{31, 128068},
++	{32, 131070},
++	{33, 136801},
++	{34, 142206},
++	{35, 147317},
++	{36, 152167},
++	{37, 156780},
++	{38, 161178},
++	{39, 165381},
++	{40, 169405},
++	{41, 173265},
++	{42, 176973},
++	{43, 180541},
++	{44, 183980},
++	{45, 187297},
++	{46, 190503},
++	{47, 193603},
++	{48, 196605},
++	{49, 202336},
++	{50, 207741},
++	{51, 212852},
++	{52, 217702},
++	{53, 222315},
++	{54, 226713},
++	{55, 230916},
++	{56, 234940},
++	{57, 238800},
++	{58, 242508},
++	{59, 246076},
++	{60, 249515},
++	{61, 252832},
++	{62, 256038},
++	{63, 259138},
++	{64, 262140},
++	{65, 267871},
++	{66, 273276},
++	{67, 278387},
++	{68, 283237},
++	{69, 287850},
++	{70, 292248},
++	{71, 296451},
++	{72, 300475},
++	{73, 304335},
++	{74, 308043},
++	{75, 311611},
++	{76, 315050},
++	{77, 318367},
++	{78, 321573},
++	{79, 324673},
++	{80, 327675},
++};
++
++struct tx_isp_sensor_attribute ps5250_attr;
++
++unsigned int ps5250_alloc_again(unsigned int isp_gain, unsigned char shift, unsigned int *sensor_again)
++{
++	struct again_lut *lut = ps5250_again_lut;
++	while(lut->gain <= ps5250_attr.max_again) {
++		if(isp_gain <= ps5250_again_lut[0].gain) {
++			*sensor_again = lut[0].value;
++			return lut[0].gain;
++		}
++		else if(isp_gain < lut->gain) {
++			*sensor_again = (lut - 1)->value;
++			return (lut - 1)->gain;
++		}
++		else{
++			if((lut->gain == ps5250_attr.max_again) && (isp_gain >= lut->gain)) {
++				*sensor_again = lut->value;
++				return lut->gain;
++			}
++		}
++
++		lut++;
++	}
++
++	return isp_gain;
++}
++
++unsigned int ps5250_alloc_dgain(unsigned int isp_gain, unsigned char shift, unsigned int *sensor_dgain)
++{
++	return isp_gain;
++}
++
++struct tx_isp_sensor_attribute ps5250_attr={
++	.name = "ps5250",
++	.chip_id = 0x5250,
++	.cbus_type = TX_SENSOR_CONTROL_INTERFACE_I2C,
++	.cbus_mask = V4L2_SBUS_MASK_SAMPLE_8BITS | V4L2_SBUS_MASK_ADDR_8BITS,
++	.cbus_device = 0x48,
++	.dbus_type = TX_SENSOR_DATA_INTERFACE_DVP,
++	.dvp = {
++		.mode = SENSOR_DVP_HREF_MODE,
++		.blanking = {
++			.vblanking = 0,
++			.hblanking = 0,
++		},
++	},
++	.max_again = 327675,
++	.max_dgain = 0,
++	.min_integration_time = 4,
++	.min_integration_time_native = 4,
++	.max_integration_time_native = 1347,
++	.integration_time_limit = 1347,
++	.total_width = 2252,
++	.total_height = 1349,
++	.max_integration_time = 1347,
++	.one_line_expr_in_us = 30,
++	.integration_time_apply_delay = 2,
++	.again_apply_delay = 2,
++	.dgain_apply_delay = 2,
++	.sensor_ctrl.alloc_again = ps5250_alloc_again,
++	.sensor_ctrl.alloc_dgain = ps5250_alloc_dgain,
++};
++
++
++static struct regval_list ps5250_init_regs_1920_1080_25fps[] = {
++
++	{0xEF, 0x00},
++	{0x06, 0x02},
++	{0x0B, 0x00},
++	{0x0C, 0xA0},
++	{0x10, 0x00},
++	{0x11, 0x00},
++	{0x12, 0x80},
++	{0x13, 0x00},
++	{0x14, 0xBF},
++	{0x15, 0x07},
++	{0x16, 0xBF},
++	{0x17, 0xBF},
++	{0x18, 0xBF},
++	{0x19, 0x64},
++	{0x1B, 0x64},
++	{0x1C, 0x64},
++	{0x1D, 0x64},
++	{0x1E, 0x64},
++	{0x1F, 0x64},
++	{0x20, 0x64},
++	{0x21, 0x00},
++	{0x23, 0x00},
++	{0x24, 0x00},
++	{0x25, 0x00},
++	{0x26, 0x00},
++	{0x27, 0x00},
++	{0x28, 0x00},
++	{0x29, 0x64},
++	{0x2B, 0x64},
++	{0x2C, 0x64},
++	{0x2D, 0x64},
++	{0x2E, 0x64},
++	{0x2F, 0x64},
++	{0x30, 0x64},
++	{0x31, 0x0F},
++	{0x32, 0x00},
++	{0x33, 0x64},
++	{0x34, 0x64},
++	{0x54, 0xC3},
++	{0x55, 0x21},
++	{0x56, 0x1D},
++	{0x57, 0x2D},
++	{0x58, 0x3D},
++	{0x5A, 0x00},
++	{0x5B, 0x00},
++	{0x5C, 0x00},
++	{0x5E, 0x01},
++	{0x5F, 0x90},
++	{0x60, 0x9A},
++	{0x61, 0xFF},
++	{0x62, 0x07},
++	{0x63, 0x46},
++	{0x64, 0x05},
++	{0x65, 0x82},
++	{0x66, 0x05},
++	{0x67, 0xBE},
++	{0x68, 0x05},
++	{0x69, 0x05},
++	{0x6A, 0x36},
++	{0x6B, 0x00},
++	{0x6C, 0x00},
++	{0x6D, 0x00},
++	{0x6E, 0x00},
++	{0x6F, 0x20},
++	{0x70, 0x00},
++	{0x71, 0x1C},
++	{0x72, 0x00},
++	{0x73, 0x96},
++	{0x74, 0x96},
++	{0x75, 0x00},
++	{0x76, 0xFD},
++	{0x77, 0xFD},
++	{0x78, 0x77},
++	{0x79, 0x34},
++	{0x7A, 0x00},
++	{0x7B, 0x03},
++	{0x7C, 0x96},
++	{0x7D, 0xF8},
++	{0x7E, 0x00},
++	{0x7F, 0xA0},
++	{0x80, 0x0E},
++	{0x81, 0x80},
++	{0x82, 0x71},
++	{0x83, 0x01},
++	{0x84, 0x00},
++	{0x85, 0x96},
++	{0x86, 0x00},
++	{0x87, 0xC8},
++	{0x88, 0x09},
++	{0x89, 0x01},
++	{0x8B, 0x00},
++	{0x8C, 0x00},
++	{0x8D, 0x00},
++	{0x8E, 0x00},
++	{0x8F, 0x00},
++	{0x90, 0x00},
++	{0x91, 0x00},
++	{0x92, 0x11},
++	{0x93, 0x00},
++	{0x94, 0x00},
++	{0x95, 0x00},
++	{0x96, 0x00},
++	{0x97, 0x00},
++	{0x99, 0x00},
++	{0x9A, 0x00},
++	{0x9B, 0x09},
++	{0x9C, 0x00},
++	{0x9D, 0x00},
++	{0x9E, 0x08},
++	{0x9F, 0x03},
++	{0xA0, 0xE0},
++	{0xA1, 0x40},
++	{0xA2, 0x30},
++	{0xA3, 0x03},
++	{0xA4, 0xFF},
++	{0xA6, 0x00},
++	{0xA8, 0x00},
++	{0xA9, 0x11},
++	{0xAA, 0x65},
++	{0xAB, 0x65},
++	{0xAD, 0x00},
++	{0xAE, 0x00},
++	{0xAF, 0x00},
++	{0xB0, 0x00},
++	{0xB1, 0x00},
++	{0xBE, 0x15},/*For ISP Hsync*/
++	{0xBF, 0x00},
++	{0xC0, 0x10},
++	{0xC1, 0x01},
++	{0xC7, 0x10},
++	{0xC8, 0x01},
++	{0xC9, 0x00},
++	{0xCA, 0x55},
++	{0xCB, 0x06},
++	{0xCC, 0x09},
++	{0xCD, 0x00},
++	{0xCE, 0xA2},
++	{0xCF, 0x00},
++	{0xD0, 0x02},
++	{0xD1, 0x10},
++	{0xD2, 0x1E},
++	{0xD3, 0x19},
++	{0xD4, 0x04},
++	{0xD5, 0x18},
++	{0xD6, 0xC8},
++	{0xD9, 0x64},
++	{0xDA, 0x12},
++	{0xDB, 0x84},
++	{0xDC, 0x31},
++	{0xF0, 0x00},
++	{0xF1, 0x00},
++	{0xF2, 0x00},
++	{0xF3, 0x00},
++	{0xF4, 0x00},
++	{0xF5, 0x40},
++	{0xF6, 0x00},
++	{0xF7, 0x00},
++	{0xF8, 0x00},
++	{0xED, 0x01},
++	{0xEF, 0x01},
++	{0x02, 0xFF},
++	{0x03, 0x03},
++	{0x04, 0x10},
++	{0x05, 0x01},
++	{0x06, 0xFF},
++	{0x07, 0x04},
++	{0x08, 0x00},
++	{0x09, 0x00},
++	{0x0A, 0x05},
++	{0x0B, 0x44},
++	{0x0C, 0x00},
++	{0x0D, 0x02},
++	{0x0E, 0x01},
++	{0x0F, 0x2C},
++	{0x10, 0x00},
++	{0x11, 0x00},
++	{0x12, 0x00},
++	{0x13, 0x00},
++	{0x14, 0x01},
++	{0x15, 0x00},
++	{0x16, 0x00},
++	{0x17, 0x00},
++	{0x1A, 0x00},
++	{0x1B, 0x07},
++	{0x1C, 0x90},
++	{0x1D, 0x04},
++	{0x1E, 0x43},
++	{0x1F, 0x00},
++	{0x20, 0x04},
++	{0x21, 0x00},
++	{0x22, 0xD4},
++	{0x23, 0x10},
++	{0x24, 0xA0},
++	{0x25, 0x00},
++	{0x26, 0x08},
++	{0x27, 0x08},
++	{0x28, 0xCC},
++	{0x29, 0x02},
++	{0x2A, 0x08},
++	{0x2B, 0x93},
++	{0x2C, 0x10},
++	{0x2D, 0x12},
++	{0x2E, 0x78},
++	{0x2F, 0x10},
++	{0x30, 0x2E},
++	{0x31, 0x84},
++	{0x32, 0x10},
++	{0x33, 0x2E},
++	{0x34, 0x84},
++	{0x35, 0x01},
++	{0x36, 0x00},
++	{0x37, 0x90},
++	{0x38, 0x44},
++	{0x39, 0xC2},
++	{0x3A, 0xFF},
++	{0x3B, 0x0A},
++	{0x3C, 0x08},
++	{0x3D, 0x04},
++	{0x3E, 0x20},
++	{0x3F, 0x22},
++	{0x40, 0xFF},
++	{0x41, 0x0F},
++	{0x42, 0xC8},
++	{0x43, 0xFF},
++	{0x44, 0x04},
++	{0x47, 0x00},
++	{0x48, 0x73},
++	{0x49, 0x0A},
++	{0x4A, 0x21},
++	{0x4B, 0x1E},
++	{0x4C, 0xBE},
++	{0x4D, 0x08},
++	{0x4E, 0x41},
++	{0x4F, 0x01},
++	{0x50, 0x08},
++	{0x51, 0x03},
++	{0x52, 0xE8},
++	{0x53, 0x08},
++	{0x54, 0x00},
++	{0x55, 0x00},
++	{0x56, 0x0A},
++	{0x57, 0x01},
++	{0x58, 0x2C},
++	{0x59, 0x00},
++	{0x5A, 0xD6},
++	{0x5B, 0x00},
++	{0x5C, 0xC8},
++	{0x5D, 0x01},
++	{0x5E, 0x9E},
++	{0x5F, 0x00},
++	{0x60, 0x3C},
++	{0x61, 0x09},
++	{0x62, 0x4A},
++	{0x63, 0x18},
++	{0x64, 0x02},
++	{0x65, 0x01},
++	{0x66, 0x27},
++	{0x69, 0x07},
++	{0x6A, 0x02},
++	{0x6B, 0x9E},
++	{0x6C, 0x10},
++	{0x6D, 0xC8},
++	{0x6E, 0x04},
++	{0x6F, 0x06},
++	{0x70, 0x00},
++	{0x71, 0xC8},
++	{0x72, 0x09},
++	{0x73, 0x56},
++	{0x74, 0x00},
++	{0x75, 0x00},
++	{0x76, 0x00},
++	{0x77, 0x00},
++	{0x78, 0x00},
++	{0x79, 0x0F},
++	{0x7A, 0x00},
++	{0x7B, 0x00},
++	{0x7C, 0x38},
++	{0x7D, 0x00},
++	{0x7E, 0x04},
++	{0x7F, 0x00},
++	{0x80, 0x00},
++	{0x83, 0x00},
++	{0x87, 0x00},
++	{0x88, 0x0B},
++	{0x89, 0x00},
++	{0x8A, 0x04},
++	{0x8B, 0x44},
++	{0x8C, 0x00},
++	{0x8D, 0x00},
++	{0x8E, 0x8A},
++	{0x8F, 0x00},
++	{0x90, 0x21},
++	{0x91, 0xBD},
++	{0x92, 0x80},
++	{0x93, 0x00},
++	{0x94, 0xFF},
++	{0x95, 0x00},
++	{0x96, 0x00},
++	{0x97, 0x01},
++	{0x98, 0x02},
++	{0x99, 0x02},
++	{0x9A, 0x50},
++	{0x9B, 0x03},
++	{0x9C, 0x54},
++	{0x9D, 0x07},
++	{0x9E, 0x30},
++	{0x9F, 0x00},
++	{0xA0, 0x00},
++	{0xA1, 0x00},
++	{0xA2, 0x00},
++	{0xA3, 0x00},
++	{0xA4, 0x0D},
++	{0xA5, 0x04},
++	{0xA6, 0x38},
++	{0xA7, 0x00},
++	{0xA8, 0x06},
++	{0xA9, 0x07},
++	{0xAA, 0x80},
++	{0xAB, 0x01},
++	{0xAD, 0x00},
++	{0xAE, 0x00},
++	{0xAF, 0x00},
++	{0xB0, 0x50},
++	{0xB1, 0x00},
++	{0xB2, 0x00},
++	{0xB3, 0x00},
++	{0xB4, 0x50},
++	{0xB5, 0x07},
++	{0xB6, 0x80},
++	{0xB7, 0x82},
++	{0xB8, 0x0A},
++	{0xB9, 0x9E},
++	{0xBA, 0x48},
++	{0xBB, 0xCC},
++	{0xBC, 0x48},
++	{0xBD, 0xC2},
++	{0xBE, 0x48},
++	{0xBF, 0xC2},
++	{0xC0, 0x54},
++	{0xC1, 0xCC},
++	{0xC2, 0x54},
++	{0xC3, 0x27},
++	{0xC4, 0x12},
++	{0xC5, 0x02},
++	{0xC6, 0x00},
++	{0xC7, 0x00},
++	{0xC8, 0x50},
++	{0xC9, 0xE5},
++	{0xCA, 0x00},
++	{0xCB, 0x00},
++	{0xCC, 0x3C},
++	{0xCE, 0xF0},
++	{0xCF, 0x80},
++	{0xD0, 0xC2},
++	{0xD1, 0x04},
++	{0xD2, 0x54},
++	{0xD3, 0x17},
++	{0xD4, 0x00},
++	{0xD5, 0x01},
++	{0xD6, 0x00},
++	{0xD7, 0x06},
++	{0xD8, 0x5E},
++	{0xD9, 0x66},
++	{0xDA, 0x70},
++	{0xDB, 0x70},
++	{0xDC, 0x10},
++	{0xDD, 0x72},
++	{0xDE, 0x43},
++	{0xDF, 0x40},
++	{0xE0, 0x42},
++	{0xE1, 0x11},
++	{0xE2, 0x6D},
++	{0xE3, 0x21},
++	{0xE4, 0x60},
++	{0xE6, 0x00},
++	{0xE7, 0x00},
++	{0xEA, 0x7A},
++	{0xF0, 0x03},
++	{0xF1, 0x16},
++	{0xF2, 0x24},
++	{0xF4, 0x06},
++	{0xF5, 0x11},
++	{0xF6, 0xC8},
++	{0xF7, 0x02},
++	{0xF8, 0x00},
++	{0xF9, 0x15},
++	{0xFA, 0x3D},
++	{0xFB, 0x02},
++	{0xFC, 0x28},
++	{0xFD, 0x32},
++	{0x09, 0x01},
++	{0xEF, 0x02},
++	{0x10, 0x00},
++	{0x20, 0x01},
++	{0x21, 0x18},
++	{0x22, 0x0C},
++	{0x23, 0x08},
++	{0x24, 0x05},
++	{0x25, 0x03},
++	{0x26, 0x02},
++	{0x27, 0x00},
++	{0x28, 0x07},
++	{0x29, 0x08},
++	{0x2E, 0x00},
++	{0x30, 0xBF},
++	{0x31, 0x06},
++	{0x32, 0x07},
++	{0x33, 0x85},
++	{0x34, 0x00},
++	{0x35, 0x00},
++	{0x36, 0x01},
++	{0x37, 0x00},
++	{0x38, 0x00},
++	{0x39, 0x00},
++	{0x3A, 0xCE},
++	{0x3B, 0x17},
++	{0x3C, 0x64},
++	{0x3D, 0x04},
++	{0x3E, 0x00},
++	{0x3F, 0x0A},
++	{0x40, 0x0A},
++	{0x41, 0x09},
++	{0x42, 0x0A},
++	{0x43, 0x09},
++	{0x45, 0x00},
++	{0x46, 0x00},
++	{0x47, 0x00},
++	{0x48, 0x00},
++	{0x49, 0x00},
++	{0x4A, 0x00},
++	{0x4B, 0x00},
++	{0x4C, 0x00},
++	{0x4D, 0x00},
++	{0x88, 0x01},
++	{0xA0, 0x00},
++	{0xA1, 0x00},
++	{0xA2, 0x00},
++	{0xA3, 0x00},
++	{0xA4, 0x00},
++	{0xA5, 0x00},
++	{0xA6, 0x00},
++	{0xA7, 0x00},
++	{0xA9, 0x00},
++	{0xAA, 0x00},
++	{0xAB, 0x00},
++	{0xB2, 0x01},
++	{0xB3, 0x00},
++	{0xB4, 0x03},
++	{0xB5, 0x01},
++	{0xB6, 0x04},
++	{0xB7, 0x01},
++	{0xB8, 0x04},
++	{0xB9, 0x00},
++	{0xBA, 0x00},
++	{0xBB, 0x00},
++	{0xBC, 0x00},
++	{0xBD, 0x00},
++	{0xBE, 0x00},
++	{0xCB, 0xBD},
++	{0xCC, 0x00},
++	{0xCD, 0x00},
++	{0xCE, 0x00},
++	{0xCF, 0x00},
++	{0xD0, 0x00},
++	{0xD1, 0x00},
++	{0xD2, 0x00},
++	{0xD3, 0x00},
++	{0xD4, 0x01},
++	{0xD5, 0x00},
++	{0xD6, 0x00},
++	{0xD7, 0x00},
++	{0xD8, 0x00},
++	{0xD9, 0x00},
++	{0xDA, 0x00},
++	{0xDB, 0x00},
++	{0xDC, 0x00},
++	{0xDD, 0xF0},
++	{0xDE, 0x04},
++	{0xDF, 0x97},
++	{0xE0, 0x50},
++	{0xE1, 0x50},
++	{0xE2, 0x14},
++	{0xE3, 0x1B},
++	{0xE4, 0x3F},
++	{0xE5, 0xFF},
++	{0xE6, 0x00},
++	{0xF0, 0x00},
++	{0xF1, 0x00},
++	{0xF2, 0x00},
++	{0xF3, 0x00},
++	{0xF6, 0x00},
++	{0xF7, 0x00},
++	{0xFD, 0x18},
++	{0xFE, 0x9E},
++	{0xED, 0x01},
++	{0xEF, 0x05},
++	{0x03, 0x10},
++	{0x04, 0xE0},
++	{0x05, 0x01},
++	{0x06, 0x00},
++	{0x07, 0x80},
++	{0x08, 0x02},
++	{0x09, 0x09},
++	{0x0A, 0x04},
++	{0x0B, 0x06},
++	{0x0C, 0x0C},
++	{0x0D, 0xA1},
++	{0x0E, 0x00},
++	{0x0F, 0x00},
++	{0x10, 0x01},
++	{0x11, 0x00},
++	{0x12, 0x00},
++	{0x13, 0x00},
++	{0x14, 0xB8},
++	{0x15, 0x07},
++	{0x16, 0x06},
++	{0x17, 0x06},
++	{0x18, 0x03},
++	{0x19, 0x04},
++	{0x1A, 0x06},
++	{0x1B, 0x06},
++	{0x1C, 0x07},
++	{0x1D, 0x08},
++	{0x1E, 0x1A},
++	{0x1F, 0x00},
++	{0x20, 0x00},
++	{0x21, 0x1E},
++	{0x22, 0x1E},
++	{0x23, 0x01},
++	{0x24, 0x04},
++	{0x25, 0x00},
++	{0x27, 0x00},
++	{0x28, 0x00},
++	{0x2A, 0x08},
++	{0x2B, 0x02},
++	{0x2C, 0xA4},
++	{0x2D, 0x06},
++	{0x2E, 0x00},
++	{0x2F, 0x05},
++	{0x30, 0xE0},
++	{0x31, 0x01},
++	{0x32, 0x00},
++	{0x33, 0x00},
++	{0x34, 0x00},
++	{0x35, 0x00},
++	{0x36, 0x00},
++	{0x37, 0x00},
++	{0x38, 0x0E},
++	{0x39, 0x01},
++	{0x3A, 0x02},
++	{0x3B, 0x01},
++	{0x3C, 0x00},
++	{0x3D, 0x00},
++	{0x3E, 0x00},
++	{0x3F, 0x01},
++	{0x40, 0x19},
++	{0x41, 0x2B},
++	{0x42, 0x00},
++	{0x43, 0x04},
++	{0x46, 0x00},
++	{0x47, 0x04},
++	{0x48, 0x00},
++	{0x49, 0x01},
++	{0x4D, 0x02},
++	{0x4F, 0x00},
++	{0x54, 0x05},
++	{0x55, 0x01},
++	{0x56, 0x05},
++	{0x57, 0x01},
++	{0x58, 0x02},
++	{0x59, 0x01},
++	{0x5B, 0x00},
++	{0x5C, 0x03},
++	{0x5D, 0x00},
++	{0x5E, 0x07},
++	{0x5F, 0x08},
++	{0x60, 0x00},
++	{0x61, 0x00},
++	{0x62, 0x00},
++	{0x63, 0x28},
++	{0x64, 0x30},
++	{0x65, 0x9E},
++	{0x66, 0xB9},
++	{0x67, 0x52},
++	{0x68, 0x70},
++	{0x69, 0x4E},
++	{0x70, 0x00},
++	{0x71, 0x00},
++	{0x72, 0x00},
++	{0x90, 0x04},
++	{0x91, 0x01},
++	{0x92, 0x00},
++	{0x93, 0x00},
++	{0x94, 0x03},
++	{0x96, 0x00},
++	{0x97, 0x01},
++	{0x98, 0x01},
++	{0x9A, 0x00},
++	{0x9B, 0x00},
++	{0x9C, 0x80},
++	{0xA0, 0x00},
++	{0xA1, 0x01},
++	{0xA2, 0x00},
++	{0xA3, 0x01},
++	{0xA4, 0x00},
++	{0xA5, 0x01},
++	{0xA6, 0x00},
++	{0xA7, 0x00},
++	{0xAA, 0x00},
++	{0xAB, 0x0F},
++	{0xAC, 0x08},
++	{0xAD, 0x09},
++	{0xAE, 0x0A},
++	{0xAF, 0x0B},
++	{0xB0, 0x00},
++	{0xB1, 0x04},
++	{0xB2, 0x01},
++	{0xB3, 0x00},
++	{0xB4, 0x00},
++	{0xB5, 0x0A},
++	{0xB6, 0x0A},
++	{0xB7, 0x0A},
++	{0xB8, 0x0A},
++	{0xB9, 0x00},
++	{0xBA, 0x00},
++	{0xBB, 0x00},
++	{0xBC, 0x00},
++	{0xBD, 0x00},
++	{0xBE, 0x00},
++	{0xBF, 0x00},
++	{0xC0, 0x00},
++	{0xC1, 0x00},
++	{0xC2, 0x00},
++	{0xC3, 0x00},
++	{0xC4, 0x00},
++	{0xC5, 0x00},
++	{0xC6, 0x00},
++	{0xC7, 0x00},
++	{0xC8, 0x00},
++	{0xD3, 0x80},
++	{0xD4, 0x00},
++	{0xD5, 0x00},
++	{0xD6, 0x03},
++	{0xD7, 0x77},
++	{0xD8, 0x00},
++	{0xF0, 0x00},
++	{0xED, 0x01},
++	{0xEF, 0x06},
++	{0x00, 0x00},
++	{0x01, 0x00},
++	{0x02, 0x03},
++	{0x03, 0x01},
++	{0x04, 0x00},
++	{0x05, 0x30},
++	{0x06, 0x00},
++	{0x07, 0x00},
++	{0x08, 0x00},
++	{0x09, 0x00},
++	{0x0A, 0x00},
++	{0x0B, 0x00},
++	{0x0C, 0x00},
++	{0x0D, 0x00},
++	{0x0E, 0x00},
++	{0x0F, 0x00},
++	{0x10, 0x00},
++	{0x17, 0x00},
++	{0x18, 0x00},
++	{0x1F, 0x04},
++	{0x20, 0x00},
++	{0x21, 0x00},
++	{0x22, 0x00},
++	{0x28, 0x1B},
++	{0x29, 0x00},
++	{0x2A, 0x00},
++	{0x2B, 0x00},
++	{0x2C, 0x08},
++	{0x30, 0xB6},
++	{0x31, 0x04},
++	{0x32, 0x16},
++	{0x33, 0x43},
++	{0x34, 0x80},
++	{0x35, 0x80},
++	{0x36, 0x80},
++	{0x37, 0x80},
++	{0x38, 0xF4},
++	{0x39, 0xF4},
++	{0x3A, 0x88},
++	{0x3B, 0x52},
++	{0x3C, 0x52},
++	{0x3D, 0x52},
++	{0x3E, 0x0A},
++	{0x3F, 0x0A},
++	{0x40, 0x00},
++	{0x41, 0x00},
++	{0x42, 0x00},
++	{0x43, 0x00},
++	{0x44, 0x00},
++	{0x45, 0x80},
++	{0x46, 0x00},
++	{0x49, 0x0C},
++	{0x5A, 0x00},
++	{0x5B, 0x00},
++	{0x5E, 0x90},
++	{0x60, 0x90},
++	{0x64, 0x40},
++	{0x65, 0x01},
++	{0x66, 0x60},
++	{0x67, 0x11},
++	{0x68, 0x60},
++	{0x69, 0x51},
++	{0x6A, 0x70},
++	{0x6B, 0x91},
++	{0x6C, 0x81},
++	{0x6D, 0x11},
++	{0x6E, 0x82},
++	{0x6F, 0x11},
++	{0x70, 0x83},
++	{0x71, 0x11},
++	{0x72, 0x94},
++	{0x73, 0x11},
++	{0x74, 0x86},
++	{0x75, 0x10},
++	{0x76, 0x87},
++	{0x77, 0x10},
++	{0x78, 0x88},
++	{0x79, 0x10},
++	{0x7A, 0x79},
++	{0x7B, 0x10},
++	{0x7C, 0x69},
++	{0x7D, 0x90},
++	{0x7E, 0x69},
++	{0x7F, 0xD0},
++	{0x80, 0x4A},
++	{0x81, 0x0C},
++	{0x82, 0x0A},
++	{0x83, 0x20},
++	{0x84, 0x60},
++	{0x85, 0x01},
++	{0x86, 0x70},
++	{0x87, 0x41},
++	{0x88, 0x80},
++	{0x89, 0xC1},
++	{0x8A, 0x81},
++	{0x8B, 0xC1},
++	{0x8C, 0x92},
++	{0x8D, 0xC1},
++	{0x8E, 0x84},
++	{0x8F, 0xD8},
++	{0x90, 0x85},
++	{0x91, 0xD8},
++	{0x92, 0x76},
++	{0x93, 0xD8},
++	{0x94, 0x67},
++	{0x95, 0x58},
++	{0x96, 0x07},
++	{0x97, 0x98},
++	{0xAC, 0x00},
++	{0xAD, 0x03},
++	{0xAE, 0x00},
++	{0xAF, 0xE8},
++	{0xB0, 0x00},
++	{0xB1, 0x80},
++	{0xB2, 0x80},
++	{0xB3, 0x80},
++	{0xB4, 0x80},
++	{0xBD, 0x00},
++	{0xBE, 0x03},
++	{0xBF, 0x00},
++	{0xC0, 0xE8},
++	{0xC1, 0x00},
++	{0xC2, 0x80},
++	{0xC3, 0x80},
++	{0xC4, 0x80},
++	{0xC5, 0x80},
++	{0xE0, 0x01},
++	{0xE2, 0x03},
++	{0xF0, 0x00},
++	{0xF3, 0x00},
++	{0xF4, 0x00},
++	{0xF5, 0x00},
++	{0xF6, 0x00},
++	{0xF7, 0x00},
++	{0xFA, 0x00},
++	{0xFB, 0x00},
++	{0xFC, 0x00},
++	{0xED, 0x01},
++
++	{PS5250_REG_END, 0x00},	/* END MARKER */
++};
++
++/*
++ * the order of the ps5250_win_sizes is [full_resolution, preview_resolution].
++ */
++static struct tx_isp_sensor_win_setting ps5250_win_sizes[] = {
++	/* 1920*1080 */
++	{
++		.width		= 1920,
++		.height		= 1080,
++		.fps		= 25 << 16 | 1,
++		.mbus_code	= V4L2_MBUS_FMT_SBGGR10_1X10,
++		.colorspace	= V4L2_COLORSPACE_SRGB,
++		.regs 		= ps5250_init_regs_1920_1080_25fps,
++	}
++};
++
++/*
++ * the part of driver was fixed.
++ */
++
++static struct regval_list ps5250_stream_on[] = {
++	{0xEF, 0x01},
++	{0x05, 0x01},	/*sw pwdn off*/
++	{0x02, 0xfb},	/*sw reset*/
++	{0x09, 0x01},
++	{0xEF, 0x01},	/* delay > 1ms */
++	{PS5250_REG_DELAY, 0x02},
++	{0xEF, 0x00},
++	{0x11, 0x00},	/*clk not gated*/
++	{PS5250_REG_END, 0x00},	/* END MARKER */
++};
++
++static struct regval_list ps5250_stream_off[] = {
++	{0xEF, 0x00},
++	{0x11, 0x80},	/*clk gated*/
++	{0xEF, 0x01},
++	{0x05, 0x05},	/*sw pwdn*/
++	{0x09, 0x01},
++	{PS5250_REG_END, 0x00},	/* END MARKER */
++};
++
++int ps5250_read(struct v4l2_subdev *sd, unsigned char reg, unsigned char *value)
++{
++	int ret;
++	struct i2c_client *client = v4l2_get_subdevdata(sd);
++	struct i2c_msg msg[2] = {
++		[0] = {
++			.addr	= client->addr,
++			.flags	= 0,
++			.len	= 1,
++			.buf	= &reg,
++		},
++		[1] = {
++			.addr	= client->addr,
++			.flags	= I2C_M_RD,
++			.len	= 1,
++			.buf	= value,
++		}
++	};
++
++	ret = i2c_transfer(client->adapter, msg, 2);
++	if (ret > 0)
++		ret = 0;
++	return ret;
++}
++
++int ps5250_write(struct v4l2_subdev *sd, unsigned char reg, unsigned char value)
++{
++	int ret;
++	struct i2c_client *client = v4l2_get_subdevdata(sd);
++	unsigned char buf[2] = {reg, value};
++	struct i2c_msg msg = {
++		.addr	= client->addr,
++		.flags	= 0,
++		.len	= 2,
++		.buf	= buf,
++	};
++
++	ret = i2c_transfer(client->adapter, &msg, 1);
++	if (ret > 0)
++		ret = 0;
++
++	return ret;
++}
++
++static int ps5250_read_array(struct v4l2_subdev *sd, struct regval_list *vals)
++{
++	int ret;
++	unsigned char val;
++	while (vals->reg_num != PS5250_REG_END) {
++		if (vals->reg_num == PS5250_REG_DELAY) {
++				msleep(vals->value);
++		} else {
++			ret = ps5250_read(sd, vals->reg_num, &val);
++			if (ret < 0)
++				return ret;
++			if (vals->reg_num == PS5250_BANK_REG){
++				val &= 0xe0;
++				val |= (vals->value & 0x1f);
++				ret = ps5250_write(sd, vals->reg_num, val);
++				ret = ps5250_read(sd, vals->reg_num, &val);
++			}
++		pr_debug("ps5250_read_array ->> vals->reg_num:0x%02x, vals->reg_value:0x%02x\n",vals->reg_num, val);
++		}
++		vals++;
++	}
++	return 0;
++}
++
++static int ps5250_write_array(struct v4l2_subdev *sd, struct regval_list *vals)
++{
++	int ret;
++	while (vals->reg_num != PS5250_REG_END) {
++		if (vals->reg_num == PS5250_REG_DELAY) {
++				msleep(vals->value);
++		} else {
++			ret = ps5250_write(sd, vals->reg_num, vals->value);
++			if (ret < 0){
++				printk("ps5250_write error  %d\n" ,__LINE__);
++				return ret;
++			}
++		}
++		vals++;
++	}
++	return 0;
++}
++
++static int ps5250_reset(struct v4l2_subdev *sd, u32 val)
++{
++	return 0;
++}
++
++static int ps5250_detect(struct v4l2_subdev *sd, unsigned int *ident)
++{
++	int ret;
++	unsigned char v;
++	ret = ps5250_read(sd, 0x00, &v);
++	pr_debug("-----%s: %d ret = %d, v = 0x%02x\n", __func__, __LINE__, ret,v);
++	if (ret < 0){
++		printk("err: ps5250 write error, ret= %d \n",ret);
++		return ret;
++	}
++	if (v != PS5250_CHIP_ID_H)
++		return -ENODEV;
++	*ident = v;
++
++	ret = ps5250_read(sd, 0x01, &v);
++	pr_debug("-----%s: %d ret = %d, v = 0x%02x\n", __func__, __LINE__, ret,v);
++	if (ret < 0)
++		return ret;
++	if (v != PS5250_CHIP_ID_L)
++		return -ENODEV;
++	*ident = (*ident << 8) | v;
++	return 0;
++}
++
++static int ps5250_set_integration_time(struct v4l2_subdev *sd, int value)
++{
++	int ret = 0;
++	unsigned int Cmd_OffNy = 0;
++	Cmd_OffNy = ps5250_attr.total_height - value;
++	ret = ps5250_write(sd, 0xef, 0x01);
++	/*Exp Line Control not set*/
++	/*ret += ps5250_write(sd, 0x0e, 0x00);*/
++	/*ret += ps5250_write(sd, 0x0f, 0x00);*/
++	ret += ps5250_write(sd, 0x0d, (unsigned char)(Cmd_OffNy & 0xff));
++	ret += ps5250_write(sd, 0x0c, (unsigned char)((Cmd_OffNy & 0xff00) >> 8));
++	ret += ps5250_write(sd, 0x09, 0x01);
++	if (ret < 0)
++		return ret;
++	return 0;
++}
++
++static int ps5250_set_analog_gain(struct v4l2_subdev *sd, int value)
++{
++	int ret = 0;
++	unsigned int GDAC = value;
++
++	ret += ps5250_write(sd, 0xef, 0x01);
++	ret += ps5250_write(sd, 0x83, (unsigned char)(GDAC & 0x7f));
++	ret += ps5250_write(sd, 0x09, 0x01);
++	if (ret < 0)
++		return ret;
++	return 0;
++}
++
++static int ps5250_set_digital_gain(struct v4l2_subdev *sd, int value)
++{
++	return 0;
++}
++
++static int ps5250_get_black_pedestal(struct v4l2_subdev *sd, int value)
++{
++	return 0;
++}
++
++static int ps5250_init(struct v4l2_subdev *sd, u32 enable)
++{
++	struct tx_isp_sensor *sensor = (container_of(sd, struct tx_isp_sensor, sd));
++	struct tx_isp_notify_argument arg;
++	struct tx_isp_sensor_win_setting *wsize = &ps5250_win_sizes[0];
++	int ret = 0;
++
++	if(!enable)
++		return ISP_SUCCESS;
++	sensor->video.mbus.width = wsize->width;
++	sensor->video.mbus.height = wsize->height;
++	sensor->video.mbus.code = wsize->mbus_code;
++	sensor->video.mbus.field = V4L2_FIELD_NONE;
++	sensor->video.mbus.colorspace = wsize->colorspace;
++	sensor->video.fps = wsize->fps;
++
++	ret = ps5250_write_array(sd, wsize->regs);
++	if (ret)
++		return ret;
++	arg.value = (int)&sensor->video;
++	sd->v4l2_dev->notify(sd, TX_ISP_NOTIFY_SYNC_VIDEO_IN, &arg);
++	sensor->priv = wsize;
++	return 0;
++}
++
++static int ps5250_s_stream(struct v4l2_subdev *sd, int enable)
++{
++	int ret = 0;
++
++	if (enable) {
++		ret = ps5250_write_array(sd, ps5250_stream_on);
++		pr_debug("ps5250 stream on\n");
++	}
++	else {
++		ret = ps5250_write_array(sd, ps5250_stream_off);
++		pr_debug("ps5250 stream off\n");
++	}
++	return ret;
++}
++
++static int ps5250_g_parm(struct v4l2_subdev *sd, struct v4l2_streamparm *parms)
++{
++	return 0;
++}
++
++static int ps5250_s_parm(struct v4l2_subdev *sd, struct v4l2_streamparm *parms)
++{
++	return 0;
++}
++
++static int ps5250_set_fps(struct tx_isp_sensor *sensor, int fps)
++{
++	struct v4l2_subdev *sd = &sensor->sd;
++	struct tx_isp_notify_argument arg;
++	unsigned int pclk = PS5250_SUPPORT_PCLK;
++	unsigned int hts = 0;
++	unsigned int vts = 0;
++	unsigned int Cmd_Lpf = 0;
++	unsigned int Cur_OffNy = 0;
++	unsigned int Cur_ExpLine = 0;
++	unsigned char tmp;
++	unsigned int newformat = 0; //the format is 24.8
++	int ret = 0;
++
++	/* the format of fps is 16/16. for example 25 << 16 | 2, the value is 25/2 fps. */
++	newformat = (((fps >> 16) / (fps & 0xffff)) << 8) + ((((fps >> 16) % (fps & 0xffff)) << 8) / (fps & 0xffff));
++	if(newformat > (SENSOR_OUTPUT_MAX_FPS << 8) || newformat < (SENSOR_OUTPUT_MIN_FPS << 8)){
++		printk("warn: fps(%d) no in range\n", fps);
++		return -1;
++	}
++	ret = ps5250_write(sd, 0xef, 0x01);
++	if(ret < 0)
++		return -1;
++	ret = ps5250_read(sd, 0x27, &tmp);
++	hts = tmp;
++	ret += ps5250_read(sd, 0x28, &tmp);
++	if(ret < 0)
++		return -1;
++	hts = (((hts & 0x1f) << 8) | tmp);
++
++	vts = (pclk * (fps & 0xffff) / hts / ((fps & 0xffff0000) >> 16));
++	Cmd_Lpf = vts -1;
++	ret = ps5250_write(sd, 0xef, 0x01);
++	ret += ps5250_write(sd, 0x0b, (unsigned char)(Cmd_Lpf & 0xff));
++	ret += ps5250_write(sd, 0x0a, (unsigned char)(Cmd_Lpf >> 8));
++	ret += ps5250_write(sd, 0x09, 0x01);
++	if(ret < 0){
++		printk("err: ps5250_write err\n");
++		return ret;
++	}
++	ret = ps5250_read(sd, 0x0c, &tmp);
++	Cur_OffNy = tmp;
++	ret += ps5250_read(sd, 0x0d, &tmp);
++	if(ret < 0)
++		return -1;
++	Cur_OffNy = (((Cur_OffNy & 0xff) << 8) | tmp);
++	Cur_ExpLine = ps5250_attr.total_height - Cur_OffNy;
++
++	sensor->video.fps = fps;
++	sensor->video.attr->max_integration_time_native = vts - 2;
++	sensor->video.attr->integration_time_limit = vts - 2;
++	sensor->video.attr->total_height = vts;
++	sensor->video.attr->max_integration_time = vts - 2;
++	arg.value = (int)&sensor->video;
++	sd->v4l2_dev->notify(sd, TX_ISP_NOTIFY_SYNC_VIDEO_IN, &arg);
++
++	ret = ps5250_set_integration_time(sd, Cur_ExpLine);
++	if(ret < 0)
++		return -1;
++	return ret;
++}
++
++static int ps5250_set_mode(struct tx_isp_sensor *sensor, int value)
++{
++	struct tx_isp_notify_argument arg;
++	struct v4l2_subdev *sd = &sensor->sd;
++	struct tx_isp_sensor_win_setting *wsize = NULL;
++	int ret = ISP_SUCCESS;
++
++	if(value == TX_ISP_SENSOR_FULL_RES_MAX_FPS){
++		wsize = &ps5250_win_sizes[0];
++	}else if(value == TX_ISP_SENSOR_PREVIEW_RES_MAX_FPS){
++		wsize = &ps5250_win_sizes[0];
++	}
++
++	if(wsize){
++		sensor->video.mbus.width = wsize->width;
++		sensor->video.mbus.height = wsize->height;
++		sensor->video.mbus.code = wsize->mbus_code;
++		sensor->video.mbus.field = V4L2_FIELD_NONE;
++		sensor->video.mbus.colorspace = wsize->colorspace;
++		sensor->video.fps = wsize->fps;
++		arg.value = (int)&sensor->video;
++		sd->v4l2_dev->notify(sd, TX_ISP_NOTIFY_SYNC_VIDEO_IN, &arg);
++	}
++	return ret;
++}
++
++static int ps5250_g_chip_ident(struct v4l2_subdev *sd,
++		struct v4l2_dbg_chip_ident *chip)
++{
++	struct i2c_client *client = v4l2_get_subdevdata(sd);
++	unsigned int ident = 0;
++	int ret = ISP_SUCCESS;
++	/*if (pwdn_gpio != -1) {
++		ret = gpio_request(pwdn_gpio, "ps5250_pwdn");
++		if (!ret) {
++			gpio_direction_output(pwdn_gpio, 1);
++			msleep(50);
++			gpio_direction_output(pwdn_gpio, 0);
++		} else {
++			printk("gpio requrest fail %d\n", pwdn_gpio);
++		}
++	}*/
++	if(reset_gpio != -1){
++		ret = gpio_request(reset_gpio,"ps5250_reset");
++		if(!ret){
++			gpio_direction_output(reset_gpio, 1);
++			msleep(5);
++			gpio_direction_output(reset_gpio, 0);
++			msleep(10);
++			gpio_direction_output(reset_gpio, 1);
++			msleep(20);
++		}else{
++			printk("gpio requrest fail %d\n",reset_gpio);
++		}
++	}
++
++	ret = ps5250_detect(sd, &ident);
++	if (ret) {
++		v4l_err(client,
++			"chip found @ 0x%x (%s) is not an ps5250 chip.\n",
++			client->addr, client->adapter->name);
++		return ret;
++	}
++	v4l_info(client, "ps5250 chip found @ 0x%02x (%s)\n",
++		client->addr, client->adapter->name);
++	return v4l2_chip_ident_i2c_client(client, chip, ident, 0);
++}
++
++static int ps5250_s_power(struct v4l2_subdev *sd, int on)
++{
++	return 0;
++}
++
++static long ps5250_ops_private_ioctl(struct tx_isp_sensor *sensor, struct isp_private_ioctl *ctrl)
++{
++	struct v4l2_subdev *sd = &sensor->sd;
++	long ret = 0;
++	switch(ctrl->cmd){
++		case TX_ISP_PRIVATE_IOCTL_SENSOR_INT_TIME:
++			ret = ps5250_set_integration_time(sd, ctrl->value);
++			break;
++		case TX_ISP_PRIVATE_IOCTL_SENSOR_AGAIN:
++			ret = ps5250_set_analog_gain(sd, ctrl->value);
++			break;
++		case TX_ISP_PRIVATE_IOCTL_SENSOR_DGAIN:
++			ret = ps5250_set_digital_gain(sd, ctrl->value);
++			break;
++		case TX_ISP_PRIVATE_IOCTL_SENSOR_BLACK_LEVEL:
++			ret = ps5250_get_black_pedestal(sd, ctrl->value);
++			break;
++		case TX_ISP_PRIVATE_IOCTL_SENSOR_RESIZE:
++			ret = ps5250_set_mode(sensor,ctrl->value);
++			break;
++		case TX_ISP_PRIVATE_IOCTL_SUBDEV_PREPARE_CHANGE:
++			ret = ps5250_write_array(sd, ps5250_stream_off);
++			break;
++		case TX_ISP_PRIVATE_IOCTL_SUBDEV_FINISH_CHANGE:
++			ret = ps5250_write_array(sd, ps5250_stream_on);
++			break;
++		case TX_ISP_PRIVATE_IOCTL_SENSOR_FPS:
++			ret = ps5250_set_fps(sensor, ctrl->value);
++			break;
++		default:
++			break;
++	}
++	return 0;
++}
++
++static long ps5250_ops_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
++{
++	struct tx_isp_sensor *sensor =container_of(sd, struct tx_isp_sensor, sd);
++	int ret;
++	switch(cmd){
++		case VIDIOC_ISP_PRIVATE_IOCTL:
++			ret = ps5250_ops_private_ioctl(sensor, arg);
++			break;
++		default:
++			return -1;
++			break;
++	}
++	return 0;
++}
++
++#ifdef CONFIG_VIDEO_ADV_DEBUG
++static int ps5250_g_register(struct v4l2_subdev *sd, struct v4l2_dbg_register *reg)
++{
++	struct i2c_client *client = v4l2_get_subdevdata(sd);
++	unsigned char val = 0;
++	int ret;
++
++	if (!v4l2_chip_match_i2c_client(client, &reg->match))
++		return -EINVAL;
++	if (!capable(CAP_SYS_ADMIN))
++		return -EPERM;
++	ret = ps5250_read(sd, reg->reg & 0xffff, &val);
++	reg->val = val;
++	reg->size = 2;
++	return ret;
++}
++
++static int ps5250_s_register(struct v4l2_subdev *sd, const struct v4l2_dbg_register *reg)
++{
++	struct i2c_client *client = v4l2_get_subdevdata(sd);
++
++	if (!v4l2_chip_match_i2c_client(client, &reg->match))
++		return -EINVAL;
++	if (!capable(CAP_SYS_ADMIN))
++		return -EPERM;
++	ps5250_write(sd, reg->reg & 0xffff, reg->val & 0xff);
++	return 0;
++}
++#endif
++
++static const struct v4l2_subdev_core_ops ps5250_core_ops = {
++	.g_chip_ident = ps5250_g_chip_ident,
++	.reset = ps5250_reset,
++	.init = ps5250_init,
++	.s_power = ps5250_s_power,
++	.ioctl = ps5250_ops_ioctl,
++#ifdef CONFIG_VIDEO_ADV_DEBUG
++	.g_register = ps5250_g_register,
++	.s_register = ps5250_s_register,
++#endif
++};
++
++static const struct v4l2_subdev_video_ops ps5250_video_ops = {
++	.s_stream = ps5250_s_stream,
++	.s_parm = ps5250_s_parm,
++	.g_parm = ps5250_g_parm,
++};
++
++static const struct v4l2_subdev_ops ps5250_ops = {
++	.core = &ps5250_core_ops,
++	.video = &ps5250_video_ops,
++};
++
++static int ps5250_probe(struct i2c_client *client,
++		const struct i2c_device_id *id)
++{
++	struct v4l2_subdev *sd;
++	struct tx_isp_video_in *video;
++	struct tx_isp_sensor *sensor;
++	struct tx_isp_sensor_win_setting *wsize = &ps5250_win_sizes[0];
++	int ret;
++
++	sensor = (struct tx_isp_sensor *)kzalloc(sizeof(*sensor), GFP_KERNEL);
++	if(!sensor){
++		printk("Failed to allocate sensor subdev.\n");
++		return -ENOMEM;
++	}
++	memset(sensor, 0 ,sizeof(*sensor));
++	/* request mclk of sensor */
++	sensor->mclk = clk_get(NULL, "cgu_cim");
++	if (IS_ERR(sensor->mclk)) {
++		printk("Cannot get sensor input clock cgu_cim\n");
++		goto err_get_mclk;
++	}
++	clk_set_rate(sensor->mclk, 24000000);
++	clk_enable(sensor->mclk);
++
++	ret = set_sensor_gpio_function(sensor_gpio_func);
++	if (ret < 0)
++		goto err_set_sensor_gpio;
++#if 0
++	ps5250_attr.dvp.gpio = sensor_gpio_func;
++
++	switch(sensor_gpio_func){
++		case DVP_PA_LOW_10BIT:
++		case DVP_PA_HIGH_10BIT:
++			mbus = ps5250_mbus_code[0];
++			break;
++		case DVP_PA_12BIT:
++			mbus = ps5250_mbus_code[1];
++			break;
++		default:
++			goto err_set_sensor_gpio;
++	}
++
++	for(i = 0; i < ARRAY_SIZE(ps5250_win_sizes); i++)
++		ps5250_win_sizes[i].mbus_code = mbus;
++
++#endif
++	 /*
++		convert sensor-gain into isp-gain,
++	 */
++	ps5250_attr.max_again = 327675;
++	ps5250_attr.max_dgain = 0; //ps5250_attr.max_dgain;
++	sd = &sensor->sd;
++	video = &sensor->video;
++	sensor->video.attr = &ps5250_attr;
++	sensor->video.vi_max_width = wsize->width;
++	sensor->video.vi_max_height = wsize->height;
++	v4l2_i2c_subdev_init(sd, client, &ps5250_ops);
++	v4l2_set_subdev_hostdata(sd, sensor);
++
++	pr_debug("@@@@@@@probe ok ------->ps5250\n");
++	return 0;
++err_set_sensor_gpio:
++	clk_disable(sensor->mclk);
++	clk_put(sensor->mclk);
++err_get_mclk:
++	kfree(sensor);
++
++	return -1;
++}
++
++static int ps5250_remove(struct i2c_client *client)
++{
++	struct v4l2_subdev *sd = i2c_get_clientdata(client);
++	struct tx_isp_sensor *sensor = v4l2_get_subdev_hostdata(sd);
++
++	if(reset_gpio != -1)
++		gpio_free(reset_gpio);
++	if(pwdn_gpio != -1)
++		gpio_free(pwdn_gpio);
++
++	clk_disable(sensor->mclk);
++	clk_put(sensor->mclk);
++
++	v4l2_device_unregister_subdev(sd);
++	kfree(sensor);
++	return 0;
++}
++
++static const struct i2c_device_id ps5250_id[] = {
++	{ "ps5250", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, ps5250_id);
++
++static struct i2c_driver ps5250_driver = {
++	.driver = {
++		.owner	= THIS_MODULE,
++		.name	= "ps5250",
++	},
++	.probe		= ps5250_probe,
++	.remove		= ps5250_remove,
++	.id_table	= ps5250_id,
++};
++
++static __init int init_ps5250(void)
++{
++	return i2c_add_driver(&ps5250_driver);
++}
++
++static __exit void exit_ps5250(void)
++{
++	i2c_del_driver(&ps5250_driver);
++}
++
++module_init(init_ps5250);
++module_exit(exit_ps5250);
++
++MODULE_DESCRIPTION("A low-level driver for Primesensor ps5250 sensors");
++MODULE_LICENSE("GPL");
+diff -Nura kernel-3.10.14_tx-isp/drivers/media/platform/sensors/sensor_info/Makefile kernel-3.10.14_sensors/drivers/media/platform/sensors/sensor_info/Makefile
+--- kernel-3.10.14_tx-isp/drivers/media/platform/sensors/sensor_info/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ kernel-3.10.14_sensors/drivers/media/platform/sensors/sensor_info/Makefile	2019-01-26 18:30:42.436609714 +0100
+@@ -0,0 +1,17 @@
++
++MODULE_NAME := sinfo
++
++all: modules
++
++.PHONY: modules clean
++
++$(MODULE_NAME)-objs := sensor_info.o
++obj-m := $(MODULE_NAME).o
++
++modules:
++	@$(MAKE) -C $(KDIR) M=$(shell pwd) $@
++sample_sinfo:
++	mips-linux-gnu-gcc sample_sinfo.c -o sample_sinfo
++clean:
++	@rm -rf *.o *~ .depend .*.cmd  *.mod.c .tmp_versions *.ko *.symvers modules.order
++	@rm -f sample_sinfo
+diff -Nura kernel-3.10.14_tx-isp/drivers/media/platform/sensors/sensor_info/README kernel-3.10.14_sensors/drivers/media/platform/sensors/sensor_info/README
+--- kernel-3.10.14_tx-isp/drivers/media/platform/sensors/sensor_info/README	1970-01-01 01:00:00.000000000 +0100
++++ kernel-3.10.14_sensors/drivers/media/platform/sensors/sensor_info/README	2018-03-20 12:23:26.000000000 +0100
+@@ -0,0 +1,5 @@
++Two ways to get sensor info
++
++1. open /dev/sinfo; ioctl TOCTL_SINFO_GET
++
++2. echo 1 >/proc/jz/sinfo/info; cat /proc/jz/sinfo/info
+diff -Nura kernel-3.10.14_tx-isp/drivers/media/platform/sensors/sensor_info/sample_sinfo.c kernel-3.10.14_sensors/drivers/media/platform/sensors/sensor_info/sample_sinfo.c
+--- kernel-3.10.14_tx-isp/drivers/media/platform/sensors/sensor_info/sample_sinfo.c	1970-01-01 01:00:00.000000000 +0100
++++ kernel-3.10.14_sensors/drivers/media/platform/sensors/sensor_info/sample_sinfo.c	2018-03-20 12:23:26.000000000 +0100
+@@ -0,0 +1,163 @@
++/*
++ * sample_sinfo.c
++ *
++ * two ways to get sensor info
++ *
++ * 1. open /dev/sinfo; ioctl TOCTL_SINFO_GET
++ *
++ * 2. echo 1 >/proc/jz/sinfo/info; cat /proc/jz/sinfo/info
++ *
++ * */
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <unistd.h>
++#include <sys/types.h>
++#include <sys/ioctl.h>
++
++#define SENSOR_INFO_IOC_MAGIC  'S'
++#define IOCTL_SINFO_GET			_IO(SENSOR_INFO_IOC_MAGIC, 100)
++#define IOCTL_SINFO_FLASH		_IO(SENSOR_INFO_IOC_MAGIC, 101)
++
++#define SENSOR_TYPE_INVALID	-1
++
++enum SENSOR_TYPE
++{
++	SENSOR_TYPE_OV9712=0,
++	SENSOR_TYPE_OV9732,
++	SENSOR_TYPE_OV9750,
++	SENSOR_TYPE_JXH42,
++	SENSOR_TYPE_SC1035,
++	SENSOR_TYPE_SC1135,
++	SENSOR_TYPE_SC1045,
++	SENSOR_TYPE_SC1145,
++	SENSOR_TYPE_AR0130,
++	SENSOR_TYPE_JXH61,
++	SENSOR_TYPE_GC1024,
++	SENSOR_TYPE_GC1064,
++	SENSOR_TYPE_GC2023,
++	SENSOR_TYPE_BF3115,
++	SENSOR_TYPE_IMX225,
++	SENSOR_TYPE_OV2710,
++	SENSOR_TYPE_IMX323,
++	SENSOR_TYPE_SC2135,
++	SENSOR_TYPE_SP1409,
++	SENSOR_TYPE_JXH62,
++	SENSOR_TYPE_BG0806,
++	SENSOR_TYPE_OV4689,
++	SENSOR_TYPE_JXF22,
++	SENSOR_TYPE_IMX322,
++	SENSOR_TYPE_IMX291,
++	SENSOR_TYPE_OV2735,
++	SENSOR_TYPE_SC3035,
++	SENSOR_TYPE_AR0237,
++	SENSOR_TYPE_SC2145,
++	SENSOR_TYPE_JXH65,
++	SENSOR_TYPE_SC2300,
++	SENSOR_TYPE_OV2735B,
++	SENSOR_TYPE_JXV01,
++	SENSOR_TYPE_PS5230,
++	SENSOR_TYPE_PS5250,
++	SENSOR_TYPE_OV2718,
++	SENSOR_TYPE_OV2732,
++	SENSOR_TYPE_SC2235,
++	SENSOR_TYPE_JXK02,
++	SENSOR_TYPE_OV7740,
++	SENSOR_TYPE_HM2140,
++	SENSOR_TYPE_GC2033,
++	SENSOR_TYPE_JXF28,
++	SENSOR_TYPE_OS02B10,
++	SENSOR_TYPE_OS05A10,
++	SENSOR_TYPE_SC2232,
++	SENSOR_TYPE_SC4236,
++	SENSOR_TYPE_SC1245,
++	SENSOR_TYPE_GC1034,
++};
++
++typedef struct SENSOR_INFO_S
++{
++	unsigned char *name;
++} SENSOR_INFO_T;
++
++SENSOR_INFO_T g_sinfo[] =
++{
++	{"ov9712"},
++	{"ov9732"},
++	{"ov9750"},
++	{"jxh42"},
++	{"sc1035"},
++	{"sc1135"},
++	{"sc1045"},
++	{"sc1145"},
++	{"ar0130"},
++	{"jxh61"},
++	{"gc1024"},
++	{"gc1064"},
++	{"gc2023"},
++	{"bf3115"},
++	{"imx225"},
++	{"ov2710"},
++	{"imx323"},
++	{"sc2135"},
++	{"sp1409"},
++	{"jxh62"},
++	{"bg0806"},
++	{"ov4689"},
++	{"jxf22"},
++	{"imx322"},
++	{"imx291"},
++	{"ov2735"},
++	{"sc3035"},
++	{"ar0237"},
++	{"sc2145"},
++	{"jxh65"},
++	{"sc2300"},
++	{"ov2735b"},
++	{"jxv01"},
++	{"ps5230"},
++	{"ps5250"},
++	{"ov2718"},
++	{"ov2732"},
++	{"sc2235"},
++	{"jxk02"},
++	{"ov7740"},
++	{"hm2140"},
++	{"gc2033"},
++	{"jxf28"},
++	{"os02b10"},
++	{"os05a10"},
++	{"sc2232"},
++	{"sc4236"},
++	{"sc1245"},
++	{"gc1034"},
++};
++int main(int argc,char **argv)
++{
++	int ret  = 0;
++	int fd   = 0;
++	int data = -1;
++	/* open device file */
++	fd = open("/dev/sinfo", O_RDWR);
++	if (-1 == fd) {
++		printf("err: open failed\n");
++		return -1;
++	}
++	/* iotcl to get sensor info. */
++	/* cmd is IOCTL_SINFO_GET, data note sensor type according to SENSOR_TYPE */
++
++	ret = ioctl(fd,IOCTL_SINFO_GET,&data);
++	if (0 != ret) {
++		printf("err: ioctl failed\n");
++		return ret;
++	}
++	if (SENSOR_TYPE_INVALID == data)
++		printf("##### sensor not found\n");
++	else
++		printf("##### sensor : %s\n", g_sinfo[data].name);
++
++	/* close device file */
++	close(fd);
++	return 0;
++}
+diff -Nura kernel-3.10.14_tx-isp/drivers/media/platform/sensors/sensor_info/sensor_info.c kernel-3.10.14_sensors/drivers/media/platform/sensors/sensor_info/sensor_info.c
+--- kernel-3.10.14_tx-isp/drivers/media/platform/sensors/sensor_info/sensor_info.c	1970-01-01 01:00:00.000000000 +0100
++++ kernel-3.10.14_sensors/drivers/media/platform/sensors/sensor_info/sensor_info.c	2018-03-20 12:23:26.000000000 +0100
+@@ -0,0 +1,677 @@
++/*
++ * sensor_info.c
++ *
++ * Copyright (C) 2012 Ingenic Semiconductor Co., Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/delay.h>
++#include <linux/gpio.h>
++#include <linux/clk.h>
++#include <linux/cdev.h>
++#include <linux/fs.h>
++#include <linux/unistd.h>
++#include <linux/types.h>
++#include <linux/ioctl.h>
++#include <linux/miscdevice.h>
++#include <linux/mutex.h>
++#include <jz_proc.h>
++
++#include <linux/module.h>
++#include <linux/proc_fs.h>
++#include <linux/seq_file.h>
++
++#include <soc/gpio.h>
++
++static unsigned i2c_adapter_nr = 0;
++module_param(i2c_adapter_nr, uint, 0644);
++MODULE_PARM_DESC(i2c_adapter_nr, "sensor used i2c_adapter nr");
++
++static int reset_gpio = GPIO_PA(18);
++module_param(reset_gpio, int, S_IRUGO);
++MODULE_PARM_DESC(reset_gpio, "Reset GPIO NUM");
++
++static int pwdn_gpio = -1;
++module_param(pwdn_gpio, int, S_IRUGO);
++MODULE_PARM_DESC(pwdn_gpio, "Power down GPIO NUM");
++
++
++#define SENSOR_INFO_IOC_MAGIC  'S'
++#define IOCTL_SINFO_GET			_IO(SENSOR_INFO_IOC_MAGIC, 100)
++#define IOCTL_SINFO_FLASH		_IO(SENSOR_INFO_IOC_MAGIC, 101)
++
++#define SENSOR_TYPE_INVALID	-1
++
++#define I2C_WRITE 0
++#define I2C_READ  1
++
++struct i2c_trans {
++	uint32_t addr;
++	uint32_t r_w;
++	uint32_t data;
++	uint32_t datalen;
++};
++
++typedef struct SENSOR_INFO_S
++{
++	uint8_t *name;
++	uint8_t i2c_addr;
++	uint8_t *clk_name;
++	uint32_t clk;
++
++	uint32_t id_value[8];
++	uint32_t id_value_len;
++	uint32_t id_addr[8];
++	uint32_t id_addr_len;
++	uint8_t id_cnt;
++
++	struct i2c_adapter *adap;
++} SENSOR_INFO_T, *SENSOR_INFO_P;
++
++enum SENSOR_TYPE
++{
++	SENSOR_TYPE_JXF22=0,
++	SENSOR_TYPE_PS5250,
++	SENSOR_TYPE_OV9712,
++	SENSOR_TYPE_OV9732,
++	SENSOR_TYPE_OV9750,
++	SENSOR_TYPE_JXH42,
++	SENSOR_TYPE_SC1035,
++	SENSOR_TYPE_SC1135,
++	SENSOR_TYPE_SC1045,
++	SENSOR_TYPE_SC1145,
++	SENSOR_TYPE_AR0130,
++	SENSOR_TYPE_JXH61,
++	SENSOR_TYPE_GC1024,
++	SENSOR_TYPE_GC1064,
++	SENSOR_TYPE_GC2023,
++	SENSOR_TYPE_BF3115,
++	SENSOR_TYPE_IMX225,
++	SENSOR_TYPE_OV2710,
++	SENSOR_TYPE_IMX323,
++	SENSOR_TYPE_SC2135,
++	SENSOR_TYPE_SP1409,
++	SENSOR_TYPE_JXH62,
++	SENSOR_TYPE_BG0806,
++	SENSOR_TYPE_OV4689,
++	SENSOR_TYPE_IMX322,
++	SENSOR_TYPE_IMX291,
++	SENSOR_TYPE_OV2735,
++	SENSOR_TYPE_SC3035,
++	SENSOR_TYPE_AR0237,
++	SENSOR_TYPE_SC2145,
++	SENSOR_TYPE_JXH65,
++	SENSOR_TYPE_SC2300,
++	SENSOR_TYPE_OV2735B,
++	SENSOR_TYPE_JXV01,
++	SENSOR_TYPE_PS5230,
++	SENSOR_TYPE_OV2718,
++	SENSOR_TYPE_OV2732,
++	SENSOR_TYPE_SC2235,
++	SENSOR_TYPE_JXK02,
++	SENSOR_TYPE_OV7740,
++	SENSOR_TYPE_HM2140,
++	SENSOR_TYPE_GC2033,
++	SENSOR_TYPE_JXF28,
++	SENSOR_TYPE_OS02B10,
++	SENSOR_TYPE_OS05A10,
++	SENSOR_TYPE_SC2232,
++	SENSOR_TYPE_SC4236,
++	SENSOR_TYPE_SC1245,
++	SENSOR_TYPE_GC1034,
++};
++
++SENSOR_INFO_T g_sinfo[] =
++{
++	{"jxf22",  0x40,  "cgu_cim", 24000000, {0x0f, 0x22}, 1, {0xa, 0xb}, 1, 2, NULL},
++	{"jxf23",  0x40,  "cgu_cim", 24000000, {0x0f, 0x23}, 1, {0xa, 0xb}, 1, 2, NULL},
++	{"ps5250", 0x48,  "cgu_cim", 24000000, {0x52, 0x50}, 1, {0x00, 0x01}, 1, 2, NULL},
++	{"ov9712", 0x30,  "cgu_cim", 24000000, {0x97, 0x11}, 1, {0xa, 0xb}, 1, 2, NULL},
++	{"ov9732", 0x36,  "cgu_cim", 24000000, {0x97, 0x32}, 1, {0x300a, 0x300b}, 2, 2, NULL},
++	{"ov9750", 0x36,  "cgu_cim", 24000000, {0x97, 0x50}, 1, {0x300b, 0x300c}, 2, 2, NULL},
++	{"jxh42",  0x30,  "cgu_cim", 24000000, {0xa0, 0x42, 0x81}, 1, {0xa, 0xb, 0x9}, 1, 3, NULL},
++	{"sc1035", 0x30,  "cgu_cim", 24000000, {0xf0, 0x00}, 1, {0x580b, 0x3c05}, 2, 2, NULL},
++	{"sc1135", 0x30,  "cgu_cim", 24000000, {0x00, 0x35}, 1, {0x580b, 0x2148}, 2, 2, NULL},
++	{"sc1045", 0x30,  "cgu_cim", 24000000, {0x10, 0x45}, 1, {0x3107, 0x3108}, 2, 2, NULL},
++	{"sc1145", 0x30,  "cgu_cim", 24000000, {0x11, 0x45}, 1, {0x3107, 0x3108}, 2, 2, NULL},
++	{"ar0130", 0x10,  "cgu_cim", 24000000, {0x2402}, 2, {0x3000}, 2, 1, NULL},
++	{"jxh61",  0x30,  "cgu_cim", 24000000, {0xa0, 0x42, 0x3}, 1, {0xa, 0xb, 0x9}, 1, 3, NULL},
++	{"gc1024", 0x3c,  "cgu_cim", 24000000, {0x10, 0x04}, 1, {0xf0, 0xf1}, 1, 2, NULL},
++	{"gc1064", 0x3c,  "cgu_cim", 24000000, {0x10, 0x24}, 1, {0xf0, 0xf1}, 1, 2, NULL},
++	{"gc2023", 0x37,  "cgu_cim", 24000000, {0x20, 0x23}, 1, {0xf0, 0xf1}, 1, 2, NULL},
++	{"bf3115", 0x6e,  "cgu_cim", 24000000, {0x31, 0x16}, 1, {0xfc, 0xfd}, 1, 2, NULL},
++	{"imx225", 0x1a,  "cgu_cim", 24000000, {0x10, 0x01}, 1, {0x3004, 0x3013}, 2, 2, NULL},
++	{"ov2710", 0x36,  "cgu_cim", 24000000, {0x27, 0x10}, 1, {0x300a, 0x300b}, 2, 2, NULL},
++	{"imx323", 0x1a,  "cgu_cim", 37125000, {0x50, 0x0}, 1, {0x301c, 0x301d}, 2, 2, NULL},
++	{"sc2135", 0x30,  "cgu_cim", 24000000, {0x21, 0x35}, 1, {0x3107, 0x3108}, 2, 2, NULL},
++	{"sp1409", 0x34,  "cgu_cim", 24000000, {0x14, 0x09}, 1, {0x04, 0x05}, 1, 2, NULL},
++	{"jxh62",  0x30,  "cgu_cim", 24000000, {0xa0, 0x62}, 1, {0xa, 0xb}, 1, 2, NULL},
++	{"bg0806", 0x32,  "cgu_cim", 24000000, {0x08, 0x06}, 1, {0x0000, 0x0001}, 2, 2, NULL},
++	{"ov4689", 0x36,  "cgu_cim", 24000000, {0x46, 0x88}, 1, {0x300a, 0x300b}, 2, 2, NULL},
++	{"imx322", 0x1a,  "cgu_cim", 37125000, {0x50, 0x0}, 1, {0x301c, 0x301d}, 2, 2, NULL},
++	{"imx291", 0x1a,  "cgu_cim", 37125000, {0xA0, 0xB2}, 1, {0x3008, 0x301e}, 2, 2, NULL},
++	{"ov2735", 0x3c,  "cgu_cim", 24000000, {0x27, 0x35, 0x05}, 1, {0x02, 0x03, 0x04}, 1, 3, NULL},
++	{"sc3035", 0x30,  "cgu_cim", 24000000, {0x30, 0x35}, 1, {0x3107, 0x3108}, 2, 2, NULL},
++	{"ar0237", 0x10,  "cgu_cim", 27000000, {0x0256}, 2, {0x3000}, 2, 1, NULL},
++	{"sc2145", 0x30,  "cgu_cim", 24000000, {0x21, 0x45}, 1, {0x3107, 0x3108}, 2, 2, NULL},
++	{"jxh65",  0x30,  "cgu_cim", 24000000, {0x0a, 0x65}, 1, {0xa, 0xb}, 1, 2, NULL},
++	{"sc2300", 0x30,  "cgu_cim", 24000000, {0x23, 0x00}, 1, {0x3107, 0x3108}, 2, 2, NULL},
++	{"ov2735b", 0x3c,  "cgu_cim", 24000000, {0x27, 0x35, 0x6, 0x7}, 1, {0x02, 0x03, 0x04, 0x04}, 1, 4, NULL},
++	{"jxv01",  0x21,  "cgu_cim", 27000000, {0x0e, 0x04}, 1, {0xa, 0xb}, 1, 2, NULL},
++	{"ps5230", 0x48,  "cgu_cim", 24000000, {0x52, 0x30}, 1, {0x00, 0x01}, 1, 2, NULL},
++	{"ov2718", 0x36,  "cgu_cim", 24000000, {0x27, 0x70}, 1, {0x300a, 0x300b}, 2, 2, NULL},
++	{"ov2732", 0x36,  "cgu_cim", 24000000, {0x00, 0x27, 0x32}, 1, {0x300a, 0x300b, 0x300c}, 2, 3, NULL},
++	{"sc2235", 0x30,  "cgu_cim", 24000000, {0x22, 0x35}, 1, {0x3107, 0x3108}, 2, 2, NULL},
++	{"jxk02",  0x40,  "cgu_cim", 24000000, {0x04, 0x03}, 1, {0xa, 0xb}, 1, 2, NULL},
++	{"ov7740", 0x21,  "cgu_cim", 24000000, {0x77, 0x42}, 1, {0x0a, 0x0b}, 1, 2, NULL},
++	{"hm2140", 0x24,  "cgu_cim", 24000000, {0x21, 0x40}, 1, {0x0000, 0x0001}, 2, 2, NULL},
++	{"gc2033", 0x37,  "cgu_cim", 24000000, {0x20, 0x33}, 1, {0xf0, 0xf1}, 1, 2, NULL},
++	{"jxf28",  0x40,  "cgu_cim", 24000000, {0x0f, 0x28}, 1, {0xa, 0xb}, 1, 2, NULL},
++	{"os02b10", 0x3c,  "cgu_cim", 24000000, {0x23, 0x08}, 1, {0x02, 0x03}, 1, 2, NULL},
++	{"os05a10", 0x36,  "cgu_cim", 24000000, {0x53, 0x05, 0x41}, 1, {0x300a, 0x300b, 0x300c}, 2, 3, NULL},
++	{"sc2232", 0x30,  "cgu_cim", 24000000, {0x22, 0x32}, 1, {0x3107, 0x3108}, 2, 2, NULL},
++	{"sc4236", 0x30,  "cgu_cim", 24000000, {0x32, 0x35}, 1, {0x3107, 0x3108}, 2, 2, NULL},
++	{"sc1245", 0x30,  "cgu_cim", 24000000, {0x12, 0x45}, 1, {0x3107, 0x3108}, 2, 2, NULL},
++	{"gc1034", 0x21,  "cgu_cim", 24000000, {0x10, 0x34}, 1, {0xf0, 0xf1}, 1, 2, NULL},
++};
++
++static int8_t g_sensor_id = -1;
++static struct mutex g_mutex;
++
++int sensor_read(SENSOR_INFO_P sinfo, struct i2c_adapter *adap, uint32_t addr, uint32_t *value)
++{
++	int ret;
++	uint8_t buf[4] = {0};
++	uint8_t data[4] = {0};
++
++	uint8_t rlen = sinfo->id_value_len;
++	uint8_t wlen = sinfo->id_addr_len;
++	struct i2c_msg msg[2] = {
++		[0] = {
++			.addr	= sinfo->i2c_addr,
++			.flags	= 0,
++			.len	= wlen,
++			.buf	= buf,
++		},
++		[1] = {
++			.addr	= sinfo->i2c_addr,
++			.flags	= I2C_M_RD,
++			.len	= rlen,
++			.buf	= data,
++		}
++	};
++
++	if (1 == wlen) {
++		buf[0] = addr&0xff;
++	} else if (2 == wlen){
++		buf[0] = (addr>>8)&0xff;
++		buf[1] = addr&0xff;
++	} else if (3 == wlen){
++		buf[0] = (addr>>16)&0xff;
++		buf[1] = (addr>>8)&0xff;
++		buf[2] = addr&0xff;
++	} else if (4 == wlen){
++		buf[0] = (addr>>24)&0xff;
++		buf[1] = (addr>>16)&0xff;
++		buf[2] = (addr>>8)&0xff;
++		buf[3] = addr&0xff;
++	} else {
++		printk("error: %s,%d wlen = %d\n", __func__, __LINE__, wlen);
++	}
++	ret = i2c_transfer(adap, msg, 2);
++	if (ret > 0) ret = 0;
++	if (0 != ret)
++		printk("error: %s,%d ret = %d\n", __func__, __LINE__, ret);
++	if (1 == rlen) {
++		*value = data[0];
++	} else if (2 == rlen){
++		*value = (data[0]<<8)|data[1];
++	} else if (3 == rlen){
++		*value = (data[0]<<16)|(data[1]<<8)|data[2];
++	} else if (4 == rlen){
++		*value = (data[0]<<24)|(data[1]<<16)|(data[2]<<8)|data[3];
++	} else {
++		printk("error: %s,%d rlen = %d\n", __func__, __LINE__, rlen);
++	}
++	printk(" sensor_read: addr=0x%x value = 0x%x\n", addr, *value);
++	return ret;
++}
++static int32_t process_one_adapter(struct device *dev, void *data)
++{
++	int32_t ret;
++	int32_t i = 0;
++	int32_t j = 0;
++	struct clk *mclk;
++	struct i2c_adapter *adap;
++	uint8_t scnt = sizeof(g_sinfo)/sizeof(g_sinfo[0]);
++	mutex_lock(&g_mutex);
++	if (dev->type != &i2c_adapter_type) {
++		mutex_unlock(&g_mutex);
++		return 0;
++	}
++
++	adap = to_i2c_adapter(dev);
++	printk("name : %s nr : %d\n", adap->name, adap->nr);
++
++	if (adap->nr != i2c_adapter_nr) {
++		mutex_unlock(&g_mutex);
++		return 0;
++	}
++
++	for (i = 0; i < scnt; i++) {
++		uint8_t idcnt = g_sinfo[i].id_cnt;
++		mclk = clk_get(NULL, g_sinfo[i].clk_name);
++		if (IS_ERR(mclk)) {
++			printk("Cannot get sensor input clock cgu_cim\n");
++			mutex_unlock(&g_mutex);
++			return PTR_ERR(mclk);
++		}
++		clk_set_rate(mclk, g_sinfo[i].clk);
++		clk_enable(mclk);
++		if(reset_gpio != -1){
++			ret = gpio_request(reset_gpio,"reset");
++			if(!ret){
++				gpio_direction_output(reset_gpio, 1);
++				msleep(20);
++				gpio_direction_output(reset_gpio, 0);
++				if(strcmp(g_sinfo[i].name, "sp1409") == 0)
++					msleep(600);
++				else{
++					msleep(20);
++					gpio_direction_output(reset_gpio, 1);
++					msleep(20);
++				}
++			}else{
++				printk("gpio requrest fail %d\n",reset_gpio);
++			}
++		}
++		if(pwdn_gpio != -1){
++			ret = gpio_request(pwdn_gpio,"pwdn");
++			if(!ret){
++				gpio_direction_output(pwdn_gpio, 1);
++				msleep(150);
++				gpio_direction_output(pwdn_gpio, 0);
++				if(strcmp(g_sinfo[i].name, "sp1409") == 0)
++					msleep(600);
++				else
++					msleep(10);
++			}else{
++				printk("gpio requrest fail %d\n",pwdn_gpio);
++			}
++		}
++
++		for (j = 0; j < idcnt; j++) {
++			uint32_t value = 0;
++			ret = sensor_read(&g_sinfo[i], adap, g_sinfo[i].id_addr[j], &value);
++			if (0 != ret) {
++				printk("err sensor read addr = 0x%x, value = 0x%x\n", g_sinfo[i].id_addr[j], value);
++				break;
++			}
++			if(strcmp(g_sinfo[i].name, "ov2735b") == 0 && j == 2){
++				if (value == g_sinfo[i].id_value[j])
++					j++;
++			}
++			else
++				if (value != g_sinfo[i].id_value[j])
++					break;
++		}
++
++		if (-1 != reset_gpio)
++			gpio_free(reset_gpio);
++		if (-1 != pwdn_gpio)
++			gpio_free(pwdn_gpio);
++		clk_disable(mclk);
++		clk_put(mclk);
++		if (j == idcnt) {
++			printk("info: success sensor find : %s\n", g_sinfo[i].name);
++			g_sinfo[i].adap = adap;
++			g_sensor_id = i;
++			goto end_sensor_find;
++		}
++	}
++	printk("info: failed sensor find\n");
++	g_sensor_id = -1;
++	mutex_unlock(&g_mutex);
++	return 0;
++end_sensor_find:
++	mutex_unlock(&g_mutex);
++	return 0;
++}
++
++static int32_t sensor_open(void)
++{
++	int ret = -1;
++	struct clk *mclk;
++	if (-1 == g_sensor_id)
++		return 0;
++
++	mutex_lock(&g_mutex);
++	mclk = clk_get(NULL, g_sinfo[g_sensor_id].clk_name);
++	if (IS_ERR(mclk)) {
++		printk("Cannot get sensor input clock cgu_cim\n");
++		mutex_unlock(&g_mutex);
++		return PTR_ERR(mclk);
++	}
++	clk_set_rate(mclk, g_sinfo[g_sensor_id].clk);
++	clk_enable(mclk);
++	if(reset_gpio != -1){
++		ret = gpio_request(reset_gpio,"reset");
++		if(!ret){
++			gpio_direction_output(reset_gpio, 1);
++			msleep(20);
++			gpio_direction_output(reset_gpio, 0);
++			msleep(20);
++			gpio_direction_output(reset_gpio, 1);
++			msleep(20);
++		}else{
++			printk("gpio requrest fail %d\n",reset_gpio);
++		}
++	}
++	if(pwdn_gpio != -1){
++		ret = gpio_request(pwdn_gpio,"pwdn");
++		if(!ret){
++			gpio_direction_output(pwdn_gpio, 1);
++			msleep(150);
++			gpio_direction_output(pwdn_gpio, 0);
++			msleep(10);
++		}else{
++			printk("gpio requrest fail %d\n",pwdn_gpio);
++		}
++	}
++	mutex_unlock(&g_mutex);
++	return 0;
++}
++
++static int32_t sensor_release(void)
++{
++	struct clk *mclk;
++	if (-1 == g_sensor_id)
++		return 0;
++	mutex_lock(&g_mutex);
++	mclk = clk_get(NULL, g_sinfo[g_sensor_id].clk_name);
++	if (IS_ERR(mclk)) {
++		printk("Cannot get sensor input clock cgu_cim\n");
++		mutex_unlock(&g_mutex);
++		return PTR_ERR(mclk);
++	}
++	if (-1 != reset_gpio)
++		gpio_free(reset_gpio);
++	if (-1 != pwdn_gpio)
++		gpio_free(pwdn_gpio);
++	clk_disable(mclk);
++	clk_put(mclk);
++	mutex_unlock(&g_mutex);
++	return 0;
++}
++
++static int32_t i2c_read_write(struct device *dev, void *data)
++{
++	int32_t ret;
++	struct i2c_adapter *adap;
++	struct i2c_trans *t = data;
++
++	uint8_t buf[4] = {0};
++	uint32_t value = 0;
++	uint8_t len = t->datalen;
++	struct i2c_msg msg = {
++			.addr	= t->addr,
++			.flags	= (t->r_w == I2C_WRITE)?0:I2C_M_RD,
++			.len	= len,
++			.buf	= buf,
++	};
++
++
++	mutex_lock(&g_mutex);
++	if (dev->type != &i2c_adapter_type) {
++		mutex_unlock(&g_mutex);
++		return 0;
++	}
++
++	adap = to_i2c_adapter(dev);
++	printk("name : %s nr : %d\n", adap->name, adap->nr);
++
++	if (adap->nr != i2c_adapter_nr) {
++		mutex_unlock(&g_mutex);
++		return 0;
++	}
++
++	if (I2C_WRITE == t->r_w) {
++		if (1 == len) {
++			buf[0] = (t->data)&0xff;
++		} else if (2 == len){
++			buf[0] = ((t->data)>>8)&0xff;
++			buf[1] = (t->data)&0xff;
++		} else if (3 == len){
++			buf[0] = ((t->data)>>16)&0xff;
++			buf[1] = ((t->data)>>8)&0xff;
++			buf[2] = (t->data)&0xff;
++		} else if (4 == len){
++			buf[0] = ((t->data)>>24)&0xff;
++			buf[1] = ((t->data)>>16)&0xff;
++			buf[2] = ((t->data)>>8)&0xff;
++			buf[3] = (t->data)&0xff;
++		} else {
++			printk("error: %s,%d len = %d\n", __func__, __LINE__, len);
++		}
++	}
++	ret = i2c_transfer(adap, &msg, 1);
++	if (ret > 0) ret = 0;
++	if (0 != ret)
++		printk("error: %s,%d ret = %d\n", __func__, __LINE__, ret);
++
++	if (I2C_READ == t->r_w) {
++		if (1 == len) {
++			value = buf[0];
++		} else if (2 == len){
++			value = (buf[0]<<8)|buf[1];
++		} else if (3 == len){
++			value = (buf[0]<<16)|(buf[1]<<8)|buf[2];
++		} else if (4 == len){
++			value = (buf[0]<<24)|(buf[1]<<16)|(buf[2]<<8)|buf[3];
++		} else {
++			printk("error: %s,%d len = %d\n", __func__, __LINE__, len);
++		}
++		printk(" i2c: addr=0x%x value = 0x%x\n", t->addr, value);
++	}
++	mutex_unlock(&g_mutex);
++	return 0;
++}
++static long sinfo_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
++{
++	int ret = 0;
++	int32_t data;
++
++	mutex_lock(&g_mutex);
++	switch (cmd) {
++	case IOCTL_SINFO_GET:
++		if (-1 == g_sensor_id)
++			data = -1;
++		else
++			data = g_sensor_id;
++		if (copy_to_user((void *)arg, &data, sizeof(data))) {
++			printk("copy_from_user error!!!\n");
++			ret = -EFAULT;
++			break;
++		}
++		break;
++	case IOCTL_SINFO_FLASH:
++		i2c_for_each_dev(NULL, process_one_adapter);
++		break;
++	default:
++		printk("invalid command: 0x%08x\n", cmd);
++		ret = -EINVAL;
++	}
++	mutex_unlock(&g_mutex);
++	return ret;
++}
++static int sinfo_open(struct inode *inode, struct file *filp)
++{
++	i2c_for_each_dev(NULL, process_one_adapter);
++	return 0;
++}
++static int sinfo_release(struct inode *inode, struct file *filp)
++{
++	printk ("misc sinfo_release\n");
++	sensor_release();
++	return 0;
++}
++
++static ssize_t sinfo_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
++{
++	return 0;
++}
++
++static struct file_operations sinfo_fops =
++{
++	.owner = THIS_MODULE,
++	.read = sinfo_read,
++	.unlocked_ioctl = sinfo_ioctl,
++	.open = sinfo_open,
++	.release = sinfo_release,
++};
++
++static struct miscdevice misc_sinfo = {
++	.minor = MISC_DYNAMIC_MINOR,
++	.name = "sinfo",
++	.fops = &sinfo_fops,
++};
++
++
++static int sinfo_proc_show(struct seq_file *m, void *v)
++{
++	if (-1 == g_sensor_id)
++		seq_printf(m, "sensor not found\n");
++	else
++		seq_printf(m, "sensor :%s\n", g_sinfo[g_sensor_id].name);
++	return 0;
++}
++
++static int sinfo_proc_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, sinfo_proc_show, NULL);
++}
++
++ssize_t sinfo_proc_write(struct file *filp, const char *buf, size_t len, loff_t *off)
++{
++	int ret = 0;
++	char cmd[100] = {0};
++	uint32_t addr,data,datalen;
++
++	if (len > 100) {
++		printk("err: cmd too long\n");
++		return -EFAULT;
++	}
++	if(copy_from_user(cmd, buf, len))
++	{
++		return -EFAULT;
++	}
++	/* probe sensor */
++	if (!strncmp(cmd, "1", strlen("1"))) {
++		i2c_for_each_dev(NULL, process_one_adapter);
++	/* probe sensor */
++	} else if (!strncmp(cmd, "probe", strlen("probe"))) {
++		i2c_for_each_dev(NULL, process_one_adapter);
++	/* sensor open/release i2c read/write
++	 * open: set sensor clk,reset
++	 * release: free clk,reset gpio
++	 *
++	 * example: sc2135
++	 *
++	 * echo open:sc2135 > /proc/jz/sinfo/info
++	 * echo i2c-w:0x30-0x3017-2 > /proc/jz/sinfo/info
++	 * echo i2c-r:0x30-1 > /proc/jz/sinfo/info
++	 *
++	 * */
++	} else if (!strncmp(cmd, "i2c-w:", strlen("i2c-w:"))) {
++		ret = sscanf(cmd, "i2c-w:%i-%i-%i", &addr, &data, &datalen);
++		if (3 != ret) {
++			printk("err: cmd error %s\n", cmd);
++			return len;
++		} else {
++			struct i2c_trans t = {addr, I2C_WRITE, data, datalen};
++			printk("info: i2c-w:%d-%d-%d\n", addr, data, datalen);
++			i2c_for_each_dev(&t, i2c_read_write);
++		}
++	} else if (!strncmp(cmd, "i2c-r:", strlen("i2c-r:"))) {
++		ret = sscanf(cmd, "i2c-r:%i-%i", &addr, &datalen);
++		if (2 != ret) {
++			printk("err: cmd error %s\n", cmd);
++			return len;
++		} else {
++			struct i2c_trans t = {addr, I2C_READ, 0, datalen};
++			printk("info: i2c-r:%d-%d\n", addr, datalen);
++			i2c_for_each_dev(&t, i2c_read_write);
++		}
++	} else if (!strncmp(cmd, "open", strlen("open"))) {
++		int i = 0;
++		char s[20] = {0};
++		ret = sscanf(cmd, "open:%s", s);
++		if (1 != ret) {
++			printk("err: cmd error %s\n", cmd);
++			return len;
++		} else {
++			uint8_t scnt = sizeof(g_sinfo)/sizeof(g_sinfo[0]);
++			for (i = 0; i < scnt; i++) {
++				if (!strcmp(s, g_sinfo[i].name)) {
++					g_sensor_id = i;
++					break;
++				}
++			}
++			if (i >= scnt) {
++				printk("err: sensor not found %s, cmd %s\n", s, cmd);
++				return len;
++			}
++			sensor_open();
++		}
++	} else if (!strncmp(cmd, "release", strlen("release"))) {
++		sensor_release();
++	} else {
++		printk("err: cmd not support\n");
++	}
++	return len;
++}
++
++static const struct file_operations sinfo_proc_fops = {
++	.owner = THIS_MODULE,
++	.open = sinfo_proc_open,
++	.read = seq_read,
++	.write = sinfo_proc_write,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++struct proc_dir_entry *g_sinfo_proc;
++static __init int init_sinfo(void)
++{
++	int ret = 0;
++	mutex_init(&g_mutex);
++	g_sinfo_proc = proc_mkdir("jz/sinfo", 0);
++	if (!g_sinfo_proc) {
++		printk("err: jz_proc_mkdir failed\n");
++	}
++	proc_create_data("info", S_IRUGO, g_sinfo_proc, &sinfo_proc_fops, NULL);
++	/* i2c_for_each_dev(NULL, process_one_adapter); */
++	ret = misc_register(&misc_sinfo);
++	/* printk("##### g_sensor_id = %d\n", g_sensor_id); */
++	return ret;
++
++}
++
++static __exit void exit_sinfo(void)
++{
++	proc_remove(g_sinfo_proc);
++	misc_deregister(&misc_sinfo);
++}
++
++module_init(init_sinfo);
++module_exit(exit_sinfo);
++
++MODULE_DESCRIPTION("A Simple driver for get sensors info ");
++MODULE_LICENSE("GPL");

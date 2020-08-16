@@ -1,0 +1,31 @@
+#!/bin/sh
+#
+# Mounts
+#
+
+case "$1" in
+  start)
+ 	echo "Mounting /dev/mmcblk0p2 on /sdcard"
+
+	if [ -e /dev/mmcblk0p2 ]; then
+		mkdir -p /sdcard
+		mount /dev/mmcblk0p2 /sdcard
+		sleep 1
+		echo "Mount /sdcard successful"
+	fi;
+
+	;;
+  stop)
+	;;
+  restart|reload)
+	"$0" stop
+	"$0" start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?
+
+

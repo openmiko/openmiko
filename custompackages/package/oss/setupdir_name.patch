@@ -1,0 +1,11 @@
+--- a/setup/setupdir.sh	2018-10-16 16:08:36.000000000 +0200
++++ b/setup/setupdir.sh	2018-10-16 20:53:31.002808290 +0200
+@@ -38,7 +38,7 @@
+ then
+   if test "`uname -r|sed 's/2.//'|sed 's/\..*//'` " = "4 "
+   then
+-	OS=Linux24
++	OS=Linux
+   fi
+ fi
+ 

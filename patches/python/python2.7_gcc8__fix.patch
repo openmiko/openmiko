@@ -1,0 +1,33 @@
+--- a/Include/objimpl.h	2014-06-30 04:05:24.000000000 +0200
++++ b/Include/objimpl.h	2018-09-21 03:11:58.594646724 +0200
+@@ -248,6 +248,20 @@
+ /* for source compatibility with 2.2 */
+ #define _PyObject_GC_Del PyObject_GC_Del
+ 
++/*
++ * Former over-aligned definition of PyGC_Head, used to compute the size of the
++ * padding for the new version below.
++ */
++union _gc_head;
++union _gc_head_old {
++    struct {
++        union _gc_head_old *gc_next;
++        union _gc_head_old *gc_prev;
++        Py_ssize_t gc_refs;
++    } gc;
++    long double dummy;
++};
++
+ /* GC information is stored BEFORE the object structure. */
+ typedef union _gc_head {
+     struct {
+@@ -255,7 +269,8 @@
+         union _gc_head *gc_prev;
+         Py_ssize_t gc_refs;
+     } gc;
+-    long double dummy;  /* force worst-case alignment */
++    double dummy; /* Force at least 8-byte alignment. */
++    char dummy_padding[sizeof(union _gc_head_old)];
+ } PyGC_Head;
+ 
+ extern PyGC_Head *_PyGC_generation0;

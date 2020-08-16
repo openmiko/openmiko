@@ -1,0 +1,10 @@
+--- uboot/common/cmd_sf.c	2018-09-28 03:16:10.000000000 +0200
++++ uboot_/common/cmd_sf.c	2019-04-10 00:50:18.073451400 +0200
+@@ -491,6 +491,7 @@
+ 
+ 	if (strcmp(cmd, "probe") == 0) {
+ 		ret = do_spi_flash_probe(argc, argv);
++		setenv("flashtype", flash->name);
+ 		goto done;
+ 	}
+ 

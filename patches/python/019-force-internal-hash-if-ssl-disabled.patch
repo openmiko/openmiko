@@ -1,0 +1,22 @@
+Force the use of internal hash implementations if _hashlib is disabled.
+
+Otherwise, python ends up with no hash algorithm implementation at all,
+breaking python-pycrypto and its reverse-dependencies.
+
+Signed-off-by: Nicolas Cavallari <nicolas.cavallari at green-communications.fr>
+
+--- a/setup.py    2016-11-16 18:02:01.120854546 +0100
++++ b/setup.py    2016-11-17 09:52:32.485674999 +0100
+@@ -863,6 +863,12 @@ class PyBuildExt(build_ext):
+         have_usable_openssl = (have_any_openssl and
+                                openssl_ver >= min_openssl_ver)
+ 
++        if '_hashlib' in disabled_module_list:
++            # Force using the non-openssl fallbacks _md5 and _sha*.
++            have_any_openssl = False
++            have_usable_openssl = False
++            openssl_ver = 0
++
+         if have_any_openssl:
+             if have_usable_openssl:
+                 # The _hashlib module wraps optimized implementations

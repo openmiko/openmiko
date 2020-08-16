@@ -1,0 +1,94 @@
+diff -Naur a/drivers/net/wireless/rtl818x/rtl8189ES/os_dep/linux/sdio_intf.c b/drivers/net/wireless/rtl818x/rtl8189ES/os_dep/linux/sdio_intf.c
+--- a/drivers/net/wireless/rtl818x/rtl8189ES/os_dep/linux/sdio_intf.c	2018-09-22 02:40:27.000000000 +0200
++++ b/drivers/net/wireless/rtl818x/rtl8189ES/os_dep/linux/sdio_intf.c	2018-09-22 18:36:27.347567000 +0200
+@@ -35,10 +35,10 @@
+ #endif
+ static int wlan_en_gpio = -1;
+ #endif //CONFIG_PLATFORM_INTEL_BYT
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
++/*#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
+ extern void wifi_teardown_dt(void);
+ extern int wifi_setup_dt(void);
+-#endif
++#endif*/
+ 
+ #ifndef dev_to_sdio_func
+ #define dev_to_sdio_func(d)     container_of(d, struct sdio_func, dev)
+@@ -980,7 +980,7 @@
+ 	DBG_871X_LEVEL(_drv_always_, DRV_NAME" BT-Coex version = %s\n", BTCOEXVERSION);
+ #endif // BTCOEXVERSION
+ 
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
++/*#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
+ 	ret =wifi_setup_dt();
+ 	if(ret)
+ 	{
+@@ -988,7 +988,7 @@
+ 		ret = -1;
+ 		goto exit;
+ 	}
+-#endif
++#endif*/
+ 	ret = platform_wifi_power_on();
+ 	if (ret)
+ 	{
+@@ -1020,9 +1020,9 @@
+ 
+ poweroff:
+ 	platform_wifi_power_off();
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
++/*#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
+ 	wifi_teardown_dt();
+-#endif
++#endif*/
+ exit:
+ 	DBG_871X_LEVEL(_drv_always_, "module init ret=%d\n", ret);
+ 	return ret;
+@@ -1040,9 +1040,9 @@
+ 
+ 	platform_wifi_power_off();
+ 
+-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
++/*#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
+ 	wifi_teardown_dt();
+-#endif
++#endif*/
+ 	rtw_suspend_lock_uninit();
+ 	rtw_drv_proc_deinit();
+ 	rtw_ndev_notifier_unregister();
+diff -Naur a/drivers/net/wireless/rtl818x/rtl8189ES/platform/platform_ops.c b/drivers/net/wireless/rtl818x/rtl8189ES/platform/platform_ops.c
+--- a/drivers/net/wireless/rtl818x/rtl8189ES/platform/platform_ops.c	2018-09-22 20:02:43.862355000 +0200
++++ b/drivers/net/wireless/rtl818x/rtl8189ES/platform/platform_ops.c	2018-09-22 18:42:30.102337000 +0200
+@@ -20,8 +20,13 @@
+ #include <linux/time.h>
+ #include <linux/delay.h>
+ #ifndef CONFIG_PLATFORM_OPS
+-extern void sdio_reinit(void);
+-extern void extern_wifi_set_enable(int is_on);
++//extern void sdio_reinit(void);
++//extern void extern_wifi_set_enable(int is_on);
++extern int bcm_wlan_power_on(int flag);
++extern int bcm_manual_detect(int on);
++#define RESET 0
++#define NORMAL 1
++
+ /*
+  * Return:
+  *	0:	power on successfully
+@@ -32,11 +37,13 @@
+ 	int ret = 0;
+ 
+ 	printk("######%s: \n",__func__);
+-	extern_wifi_set_enable(0);
++	/*extern_wifi_set_enable(0);
+ 	msleep(500);
+-	extern_wifi_set_enable(1);
++	extern_wifi_set_enable(1);*/
++	bcm_manual_detect(1);
++	bcm_wlan_power_on(NORMAL);
+ 	msleep(500);
+-	sdio_reinit();
++	//sdio_reinit();
+ 	return ret;
+ }
+ 

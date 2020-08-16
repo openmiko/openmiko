@@ -1,0 +1,4 @@
+config BR2_PACKAGE_OSS
+	bool "oss"
+	help
+	  oss commands including ossplay and ossrecord

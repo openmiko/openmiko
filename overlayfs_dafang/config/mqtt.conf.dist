@@ -1,0 +1,45 @@
+############################################################
+# edit this file and move it to /system/sdcard/config/mqtt.conf #
+############################################################
+
+export LD_LIBRARY_PATH='/thirdlib:/system/lib:/system/sdcard/lib'
+
+# Options for mosquitto_sub & mosquitto_pub
+USER=mqtt-user
+PASS=mqtt-password
+HOST=mqtt-host
+PORT=1883
+
+# Define a location
+LOCATION="myhome"
+
+# Define device name
+DEVICE_NAME="dafang"
+
+# Define the base topic used by the camera
+# send a message to myhome/dafang/set with the payload help for help.
+# Results will be placed in myhome/dafang/${command} or topic/dafang/error - so please subscribe topic/dafang/# for testing purposes
+TOPIC="$LOCATION/$DEVICE_NAME"
+
+# Define an autodiscovery prefix, if autodiscovery is desired:
+# AUTODISCOVERY_PREFIX="homeassistant"
+
+# Define additional options for Mosquitto here.
+# For example --cafile /system/sdcard/config/DST_Root_CA_X3.pem --tls-version tlsv1
+# or use a special id to connect to brokers like azure
+MOSQUITTOOPTS=""
+
+# Add options for mosquitto_pub like -r for retaining messages
+MOSQUITTOPUBOPTS=""
+
+# Send a mqtt statusupdate every n seconds
+STATUSINTERVAL=30
+
+# Define whether you would like to have light level exposed (by hardware sensor og virtual calcuations).
+# If the device doesn't come with a hardware sensor, your only option is to use 'virtual'.
+# 
+#  Options:
+#     hw = Use 'hw' if the device has build in hardware light sensor. For more details, see . See issue eg. #1120 for more details...
+#     virtual = Use 'virtual' calculations, based on the lightlevel on the image, also known as ISP exposure (from /proc/jz/isp/isp_info)
+#     false = Use 'false' (default) to DISABLE the topic (It will not publishing details about light level)
+LIGHT_SENSOR="false"

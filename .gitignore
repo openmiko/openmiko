@@ -1,0 +1,5 @@
+fs/opt/version
+_build/
+.DS_Store
+sharedfiles
+output

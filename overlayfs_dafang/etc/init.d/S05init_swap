@@ -1,0 +1,38 @@
+#!/bin/sh
+#
+# init swap on zram...
+#
+
+USE_ZRAM_AS="SWAP"
+# USE_ZRAM_AS="BLOCK-DEV"
+
+[ -f /tmp/factory_mode ] && exit 1
+
+case "$1" in
+  start)
+        echo 100 > /proc/sys/vm/swappiness
+        echo 8388608 > /sys/block/zram0/disksize
+        if [ "$USE_ZRAM_AS" == "SWAP" ] ;then
+          mkswap /dev/zram0
+          swapon /dev/zram0
+        else
+          mkfs.vfat /dev/zram0
+          mkdir /tmp/cloud
+          mount /dev/zram0 /tmp/cloud
+        fi
+        
+	;;
+  stop)
+        echo "do nothing"
+        ;;
+  restart|reload)
+        "$0" stop
+        "$0" start
+        ;;
+  *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+esac
+
+exit $?
+

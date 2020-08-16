@@ -1,0 +1,69 @@
+###################################################################
+# edit this file and move it to /system/sdcard/config/motion.conf #
+###################################################################
+
+# Enable verbose debug messages to stderr
+debug_msg_enable=false
+
+# Configure the motion core parameters:
+
+region_of_interest=0,0,1280,720
+motion_sensitivity=2
+motion_indicator_color=2
+motion_timeout=-1
+motion_detection=on
+motion_tracking=off
+
+# Configure how to deal with motion events:
+
+motion_trigger_led=true
+publish_mqtt_message=false
+publish_mqtt_snapshot=false
+publish_mqtt_video=false
+send_email=false
+send_telegram=false
+telegram_alert_type=image
+send_matrix=false
+
+# General
+group_date_pattern="+%Y-%m-%d/%H"
+file_date_pattern="+%Y-%m-%d_%H-%M-%S"
+video_duration=10
+save_files_attr="0644"
+save_dirs_attr="0755"
+
+# Record from RTSP (RTSP H264 must be enabled)
+# RTSP is alternative for `record_video` function in `detectionOn.sh` - instead of 1s-getimage gets real video.
+video_use_rtsp=true
+video_rtsp_w=1280
+video_rtsp_h=720
+video_rtsp_f=15
+
+# Snapshots
+save_snapshot=false
+save_snapshot_dir=/system/sdcard/DCIM/Motion/Stills
+max_snapshot_days=20
+
+# Videos
+save_video=false
+save_video_dir=/system/sdcard/DCIM/Motion/Videos
+max_video_days=10
+
+# Configure FTP snapshots and videos
+ftp_snapshot=false
+ftp_video=false
+ftp_host="ftp.myserver.net"
+ftp_port=21
+ftp_username="user1"
+ftp_password="password2"
+ftp_stills_dir="motion/stills"
+ftp_videos_dir="motion/videos"
+
+# Configure SMB snapshots and videos
+smb_snapshot=false
+smb_video=false
+smb_share="//DEVICE/SHARE"
+smb_username="admin"
+smb_password="admin"
+smb_stills_path="dafang_camera/stills"
+smb_videos_path="dafang_camera/videos"

@@ -1,0 +1,56 @@
+--- uboot/board/ingenic/isvp_t20/board.c	2018-09-28 03:16:06.000000000 +0200
++++ uboot_/board/ingenic/isvp_t20/board.c	2019-04-10 18:58:32.944987100 +0200
+@@ -33,7 +33,7 @@
+ 
+ extern int jz_net_initialize(bd_t *bis);
+ struct cgu_clk_src cgu_clk_src[] = {
+-	{VPU, MPLL},
++	{VPU, VPLL},
+ 	{MACPHY, MPLL},
+ 	{MSC, APLL},
+ 	{SSI, MPLL},
+@@ -67,6 +67,35 @@
+ #endif
+ 	/* used for usb_dete */
+ 	/*gpio_set_pull_dir(GPIO_PB(22), 1);*/
++
++	//printf("Sets yellow LED off\n");
++	//run_command("gpio set 38",0);
++	//printf("Sets blue LED off\n");
++	//run_command("gpio set 39",0);
++
++	printf("Enables USB\n");
++	run_command("gpio set 47",0);
++
++	printf("Run SF Probe\n");
++	run_command("sf probe",0);
++
++	printf("Enables SDCARD\n");
++	if (strncmp(getenv("count"), "1", 1) == 0) {
++		printf("ping\n");
++		run_command("gpio set 43",0);
++		run_command("gpio clear 48",0);
++		run_command("sleep 3",0);
++		run_command("gpio clear 43",0);
++	} else {
++		printf("pong\n");
++		run_command("gpio set 43",0);
++		run_command("sleep 1",0);
++		run_command("gpio clear 48",0);
++	}
++
++	//printf("Checks Auto Update\n");
++	//run_command("sdupdate",0);
++
+ 	return 0;
+ }
+ 
+@@ -101,7 +130,7 @@
+ /* U-Boot common routines */
+ int checkboard(void)
+ {
+-	puts("Board: ISVP (Ingenic XBurst T20 SoC)\n");
++	puts("Board: Openfang compatible board (Ingenic XBurst T20 SoC)\n");
+ 	return 0;
+ }
+ 

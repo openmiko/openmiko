@@ -1,0 +1,88 @@
+#!/bin/sh
+
+# Import library of common functions
+. /scripts/common_functions.sh
+
+
+# Yellow LED - gpio 38
+# Blue LED   - gpio 39
+# Enable USB - gpio 47
+# IR LED     - gpio 49
+
+## Initialize the GPIOS:
+for pin in 25 26 49; do
+  init_gpio $pin
+done
+
+# the ir_led pin is a special animal and needs active low
+echo 1 > /sys/class/gpio/gpio49/active_low
+
+
+# Set Global Environment
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+export PATH=/system/bin:$PATH
+export LD_LIBRARY_PATH=/system/lib
+export LD_LIBRARY_PATH=/thirdlib:$LD_LIBRARY_PATH
+
+# networking
+ifconfig lo up
+
+#set the GPIO PC13 to high, make the USB Disk can be use
+cd /sys/class/gpio
+echo 77 > export       #申请GPIO
+cd gpio77
+echo out > direction   #设置为输出模式
+echo 0 > active_low    #value是0,表示低电平。value是1,表示高电平
+echo 1 > value         #设置电平（输出模式）
+
+mkdir -p /driver
+mkdir -p /system
+mkdir -p /backupa
+mkdir -p /configs
+mkdir -p /params
+
+
+#mount -t jffs2 /dev/mtdblock4 /system
+#mount -t jffs2 /dev/mtdblock7 /backupa
+#mount -t jffs2 /dev/mtdblock8 /configs
+#mount -t jffs2 /dev/mtdblock9 /params
+
+# Turn on blue LED
+echo 1 >/sys/class/leds/led_blue/brightness
+
+
+# Check if we're on a Wyzecam and properly enable the SD card interface
+if [ -f /driver/rtl8189ftv.ko ]; then
+    echo 43 >/sys/class/gpio/export
+    echo out >/sys/class/gpio/gpio43/direction
+    echo 0 >/sys/class/gpio/gpio43/value
+fi
+
+
+# Turn off blue LED
+echo none >/sys/class/leds/led_blue/trigger
+
+
+# Start all init scripts in /etc/init.d
+# executing them in numerical order.
+#
+for i in /etc/init.d/S??* ;do
+
+     # Ignore dangling symlinks (if any).
+     [ ! -f "$i" ] && continue
+
+     case "$i" in
+	*.sh)
+	    # Source shell script for speed.
+	    (
+		trap - INT QUIT TSTP
+		set start
+		. $i
+	    )
+	    ;;
+	*)
+	    # No sh extension, so fork subprocess.
+	    $i start
+	    ;;
+    esac
+done

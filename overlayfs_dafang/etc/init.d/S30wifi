@@ -1,0 +1,43 @@
+#!/bin/sh
+#
+# Start the wifi
+#
+
+CONFIGPATH=/sdcard/etc
+
+case "$1" in
+  start)
+ 	echo -n "Starting wifi..."
+
+	if [ ! -f $CONFIGPATH/wpa_supplicant.conf ]; then
+		echo "Warning: You have to configure wpa_supplicant in order to use wifi."
+	fi
+
+	MAC=$(grep MAC < /params/config/.product_config | cut -c16-27 | sed 's/\(..\)/\1:/g;s/:$//')
+
+	modprobe 8189fs rtw_initmac="$MAC"
+	wpa_supplicant_status="$(wpa_supplicant -d -B -i wlan0 -c $CONFIGPATH/wpa_supplicant.conf -P /var/run/wpa_supplicant.pid)"
+	echo "wpa_supplicant: $wpa_supplicant_status"
+
+	network_interface_name="wlan0"
+
+	wpa_supplicant -Dnl80211 -i wlan0 -c "$CONFIGPATH/wpa_supplicant.conf" -B
+
+	udhcpc -i wlan0 -b -A 20
+
+	;;
+  stop)
+	echo -n "Stopping wifi..."
+	;;
+  restart|reload)
+	"$0" stop
+	"$0" start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?
+
+

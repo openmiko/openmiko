@@ -1,0 +1,13 @@
+--- a/common/cmd_jzcmd.c	2019-02-09 06:15:40.085490936 +0100
++++ b/common/cmd_jzcmd.c	2019-02-09 06:14:12.184662000 +0100
+@@ -7,8 +7,10 @@
+ 	type = get_t20_type();
+ 	if ((type>=0)&&(type<T20_TYPE_END)) {
+ 		printf("SOC: %s\n", t20_soc_type_str[type]);
++		setenv("soctype", t20_soc_type_str[type]);
+ 	} else {
+ 		printf("SOC: %s\n", "NULL");
++		setenv("soctype", "unknown");
+ 	}
+ 	return 0;
+ }

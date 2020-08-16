@@ -1,0 +1,27 @@
+--- uboot/common/cmd_gpio.c	2018-09-28 03:16:09.000000000 +0200
++++ uboot_/common/cmd_gpio.c	2018-10-14 00:11:08.263359130 +0200
+@@ -16,7 +16,7 @@
+ #endif
+ 
+ enum gpio_cmd {
+-	GPIO_INPUT,
++	GPIO_INPUT2,
+ 	GPIO_SET,
+ 	GPIO_CLEAR,
+ 	GPIO_TOGGLE,
+@@ -57,13 +57,13 @@
+ 		goto show_usage;
+ 
+ 	/* grab the pin before we tweak it */
+-	if (gpio_request(gpio, "cmd_gpio")) {
++	if (gpio_request(gpio, "cmd_gpio") != gpio) {
+ 		printf("gpio: requesting pin %u failed\n", gpio);
+ 		return -1;
+ 	}
+ 
+ 	/* finally, let's do it: set direction and exec command */
+-	if (sub_cmd == GPIO_INPUT) {
++	if (sub_cmd == GPIO_INPUT2) {
+ 		gpio_direction_input(gpio);
+ 		value = gpio_get_value(gpio);
+ 	} else {

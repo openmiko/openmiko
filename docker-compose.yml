@@ -1,0 +1,45 @@
+version: "3"
+
+services:
+  builder:
+    image: tachang/openmiko-buildenv
+    environment:
+      EXAMPLE: development
+    volumes:
+      - ".:/src"
+      - "./legacy_src:/openmiko/legacy_src"
+      - "./patches:/openmiko/patches"
+      - "./config:/openmiko/config"
+      - "./buildscripts:/openmiko/buildscripts"
+      - "./fs:/openmiko/fs"
+      - "./sharedfiles:/sharedfiles"
+      - "./output/images:/openmiko/_build/buildroot-2016.02/output/images"
+      - "./output/target/openmiko/_build/buildroot-2016.02/output/target"
+    ports:
+      - "69:69/udp"
+    cap_add:
+      - ALL
+
+  # NFS server image if you are looking to boot from NFS
+  #
+  # nfs:
+  #   image: erichough/nfs-server
+  #   environment:
+  #     NFS_EXPORT_0: "/sharedfiles/rootfs  73.63.166.167/32(rw,no_subtree_check,no_root_squash)"
+  #     NFS_LOG_LEVEL: "DEBUG"
+  #   volumes:
+  #     - "./sharedfiles:/sharedfiles"
+  #   cap_add:
+  #     - SYS_ADMIN
+  #   ports:
+  #     - "2049:2049/tcp"
+  #     - "2049:2049/udp"
+  #     - "111:111/tcp"
+  #     - "111:111/udp"
+  #     - "32765:32765/tcp"
+  #     - "32765:32765/udp"
+  #     - "32767:32767/tcp"
+  #     - "32767:32767/udp"
+  #   security_opt:
+  #     - apparmor=erichough-nfs
+

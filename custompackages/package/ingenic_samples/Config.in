@@ -1,0 +1,4 @@
+config BR2_PACKAGE_V4L2RTSPSERVER
+	bool "v4l2rtspserver"
+	help
+	  v4l2rtspserver

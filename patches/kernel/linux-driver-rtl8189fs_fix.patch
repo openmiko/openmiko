@@ -1,0 +1,29 @@
+diff -Naur kernel-3.10.14_wireless/drivers/net/wireless/rtl818x/rtl8189FS/platform/platform_ops.c kernel-3.10.14_wireless_mod/drivers/net/wireless/rtl818x/rtl8189FS/platform/platform_ops.c
+--- kernel-3.10.14_wireless/drivers/net/wireless/rtl818x/rtl8189FS/platform/platform_ops.c	2019-01-28 02:18:32.329920325 +0100
++++ kernel-3.10.14_wireless_mod/drivers/net/wireless/rtl818x/rtl8189FS/platform/platform_ops.c	2019-01-28 02:34:24.447699669 +0100
+@@ -17,7 +17,13 @@
+  *
+  *
+  ******************************************************************************/
++#include <linux/time.h>
++#include <linux/delay.h>
+ #ifndef CONFIG_PLATFORM_OPS
++extern int bcm_wlan_power_on(int flag);
++extern int bcm_manual_detect(int on);
++#define RESET 0
++#define NORMAL 1
+ /*
+  * Return:
+  *	0:	power on successfully
+@@ -27,6 +33,11 @@
+ {
+ 	int ret = 0;
+ 
++	printk("######%s: \n",__func__);
++
++	bcm_manual_detect(1);
++	bcm_wlan_power_on(NORMAL);
++ 	msleep(500);
+ 
+ 	return ret;
+ }

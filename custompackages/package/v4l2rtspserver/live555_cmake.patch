@@ -1,0 +1,15 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9f7762a..39627f2 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -81,8 +81,8 @@ endif (LOG4CPP_INCLUDE_DIR)
+ find_path(LIBLIVE555_INCLUDE_DIR liveMedia/liveMedia.hh ONLY_CMAKE_FIND_ROOT_PATH)
+ if (NOT LIBLIVE555_INCLUDE_DIR)
+         message(STATUS "Installing live555")
+-        EXEC_PROGRAM("wget http://www.live555.com/liveMedia/public/live555-latest.tar.gz -O - | tar xzf -")
+-        EXEC_PROGRAM("cd live && ./genMakefiles linux-gdb && make CPLUSPLUS_COMPILER='${CMAKE_CXX_COMPILER} -DALLOW_RTSP_SERVER_PORT_REUSE=1' C_COMPILER=${CMAKE_C_COMPILER} LINK='${CMAKE_CXX_COMPILER} -o' PREFIX=${CMAKE_FIND_ROOT_PATH} install")
++        EXEC_PROGRAM("wget https://download.videolan.org/pub/contrib/live555/live.2020.03.06.tar.gz -O - | tar xzf -")
++        EXEC_PROGRAM("cd live && ./genMakefiles linux-gdb && make CPLUSPLUS_COMPILER='${CMAKE_CXX_COMPILER} -DALLOW_RTSP_SERVER_PORT_REUSE=1 -DNO_OPENSSL=1' C_COMPILER=${CMAKE_C_COMPILER} LINK='${CMAKE_CXX_COMPILER} -o' PREFIX=${CMAKE_FIND_ROOT_PATH} install")
+ endif (NOT LIBLIVE555_INCLUDE_DIR)
+ 
+ find_path(LIBLIVE555_INCLUDE_DIR liveMedia/liveMedia.hh ONLY_CMAKE_FIND_ROOT_PATH)

@@ -1,0 +1,25 @@
+diff -ur buildroot-2016.02_old/toolchain/toolchain-wrapper.c buildroot-2016.02/toolchain/toolchain-wrapper.c
+--- buildroot-2016.02_old/toolchain/toolchain-wrapper.c	2016-03-01 21:47:30.000000000 +0100
++++ buildroot-2016.02/toolchain/toolchain-wrapper.c	2018-11-16 01:00:46.550350000 +0100
+@@ -66,6 +66,9 @@
+ #ifdef BR_OMIT_LOCK_PREFIX
+ 	"-Wa,-momit-lock-prefix=yes",
+ #endif
++#ifdef BR_FP_CONTRACT_OFF
++	"-ffp-contract=off",
++#endif
+ #ifdef BR_BINFMT_FLAT
+ 	"-Wl,-elf2flt",
+ #endif
+diff -ur buildroot-2016.02_old/toolchain/toolchain-wrapper.mk buildroot-2016.02/toolchain/toolchain-wrapper.mk
+--- buildroot-2016.02_old/toolchain/toolchain-wrapper.mk	2016-03-01 21:47:30.000000000 +0100
++++ buildroot-2016.02/toolchain/toolchain-wrapper.mk	2018-11-16 01:00:51.461416000 +0100
+@@ -16,7 +16,7 @@
+ # separate argument when used in execv() by the toolchain wrapper.
+ TOOLCHAIN_WRAPPER_OPTS = \
+ 	$(foreach f,$(call qstrip,$(BR2_TARGET_OPTIMIZATION)),"$(f)"$(comma))
+-TOOLCHAIN_WRAPPER_ARGS += -DBR_ADDITIONAL_CFLAGS='$(TOOLCHAIN_WRAPPER_OPTS)'
++TOOLCHAIN_WRAPPER_ARGS += -DBR_FP_CONTRACT_OFF -DBR_ADDITIONAL_CFLAGS='$(TOOLCHAIN_WRAPPER_OPTS)'
+ 
+ ifeq ($(BR2_CCACHE),y)
+ TOOLCHAIN_WRAPPER_ARGS += -DBR_CCACHE

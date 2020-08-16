@@ -1,0 +1,11 @@
+config BR2_PACKAGE_MTK_NVRAM
+	bool "nvram"
+	help
+	  nvram utils
+
+menu "nvram Features"
+
+config BR2_PACKAGE_MTK_NVRAM_MENU
+	string "mtd name for nvram"
+	default "config"
+endmenu

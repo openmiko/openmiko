@@ -39,6 +39,16 @@ COPY . /src
 
 RUN /src/buildscripts/setup_buildroot.sh
 
+
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+RUN python get-pip.py
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
+RUN nvm install node
+
+RUN npm config set user 0
+RUN npm config set unsafe-perm true
+
+
 # RUN make
 
 # VOLUME /openmiko/build/buildroot-2016.02/output

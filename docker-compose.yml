@@ -5,10 +5,12 @@ services:
     image: openmiko/openmiko:latest
     environment:
       EXAMPLE: development
-    #volumes:
-    #  - buildrootoutput:/openmiko/build/buildroot-2016.02/output
-    # ports:
-    #   - "69:69/udp"
+    volumes:
+      - ".:/src"
+      - buildrootoutput:/openmiko/build/buildroot-2016.02/output
+    ports:
+      - "5000:5000"
+      # - "69:69/udp"
     cap_add:
       - ALL
 

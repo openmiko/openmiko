@@ -12,7 +12,7 @@ More specific install guides can be found in the following links
 - [Wyze Pan Cam (WYZECP1)](/doc/WYZECP1/wyzecp1_instructions.md) (thanks to M@ SWARTZ)
 - [Xiaomi Mijia V3 2018 (SXJ02ZM)](/doc/SXJ02ZM/SXJ02ZM_instructions.md) (thanks to TheRoss)
 
-## 1. Dowload bootloader
+## 1. Download bootloader
 
 :heavy_exclamation_mark:WARNING!! You may brick your device in this step. Be cautious.
 

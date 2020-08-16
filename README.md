@@ -12,11 +12,11 @@ This project generously uses the code from both projects and it is much apprecia
 
 A few of the quality of life improvements in this project aimed at developers:
 
-- A standardized toolchain based on [Buildroot](https://buildroot.org/). It is based on an older
-Buildroot, 2016.02, though due to kernel constraints.
-- Docker image for development with precompiled code (the image is big though, greater than 8GB)
-- A compiled `uboot` based bootloader with USB ethernet booting and ext4. Load kernel images (`uImage.lzma`)
+- A standardized toolchain based on [Buildroot](https://buildroot.org/)
+- Docker image for development with precompiled artifacts available for download
+- A compiled `uboot` based bootloader with USB ethernet and ext4. Load kernel images (`uImage.lzma`)
 via TFTP for faster development.
+
 
 
 ## Overview

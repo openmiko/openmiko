@@ -39,7 +39,9 @@ COPY . /src
 
 RUN /src/buildscripts/setup_buildroot.sh
 
-#RUN make
+# RUN make
+
+# VOLUME /openmiko/build/buildroot-2016.02/output
 
 WORKDIR /openmiko
 

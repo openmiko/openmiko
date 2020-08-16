@@ -5,16 +5,15 @@ services:
     image: openmiko/openmiko:latest
     environment:
       EXAMPLE: development
-    volumes:
-      - ".:/src"
-      - "./sharedfiles:/sharedfiles"
-      # - "./buildroot_output:/openmiko/build/buildroot-2016.02/output"
-      # - "./output/images:/openmiko/build/buildroot-2016.02/output/images"
-      # - "./output/target/openmiko/build/buildroot-2016.02/output/target"
+    #volumes:
+    #  - buildrootoutput:/openmiko/build/buildroot-2016.02/output
     # ports:
     #   - "69:69/udp"
     cap_add:
       - ALL
+
+volumes:
+  buildrootoutput:
 
   # NFS server image if you are looking to boot from NFS
   #

@@ -1,0 +1,5 @@
+# Buildroot output files
+output/
+node_modules
+openmiko-output.tar.gz
+web/openmiko/node_modules

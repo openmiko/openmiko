@@ -7,7 +7,9 @@ services:
       EXAMPLE: development
     volumes:
       - ".:/src"
-      - buildrootoutput:/openmiko/build/buildroot-2016.02/output
+      # To get up and running faster and not have to build everything from scratch you can
+      # download precompiled objects and extract to output directory.
+      - "./openmiko-output.tar.gz:/openmiko/build/buildroot-2016.02/openmiko-output.tar.gz"
     ports:
       - "5000:5000"
       # - "69:69/udp"

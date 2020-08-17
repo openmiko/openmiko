@@ -2,5 +2,4 @@ fs/opt/version
 build/
 .DS_Store
 sharedfiles
-output
-
+openmiko-output.tar.gz

@@ -2,6 +2,7 @@
   <div class="home">
     <h1>This is a Home page</h1>
     <ImageViewer></ImageViewer>
+    {{ msg }}
   </div>
 </template>
 

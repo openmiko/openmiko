@@ -8,18 +8,44 @@
     </div>
 
     <div class="image-container">
-      <img src="https://picsum.photos/1920/1080/"/>
+      <img v-bind:src="imgsrc" />
     </div>
     
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'ImageViewer',
-  props: {
-    msg: String
-  }
+  data () {
+    return {
+      // Blank placeholder image
+      imgsrc: "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+    }
+  },
+  mounted () {
+
+    var CAMERA_BASEURL = process.env.VUE_APP_CAMERA_BASEURL;
+    var url = `${CAMERA_BASEURL}/camera/snap`
+
+    axios
+      .get(url, { responseType: 'arraybuffer' })
+      .then(response => {
+
+        const base64 = btoa(
+          new Uint8Array(response.data).reduce(
+            (data, byte) => data + String.fromCharCode(byte),
+            '',
+          ),
+        );
+        console.log(base64);
+
+        this.imgsrc = "data:image/jpeg;base64," + base64
+      })
+  },
+
 }
 </script>
 

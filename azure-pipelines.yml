@@ -8,6 +8,9 @@ resources:
   - container: builder
     image: openmiko/openmiko:latest
 
+
+container: builder
+
 steps:
 - script: |
     cd /openmiko/build/buildroot-2016.02/

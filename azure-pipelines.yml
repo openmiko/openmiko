@@ -20,6 +20,7 @@ container: builder
 steps:
 - script: |
     echo "Starting make"
+    make clean
     make
   workingDirectory: /openmiko/build/buildroot-2016.02
 

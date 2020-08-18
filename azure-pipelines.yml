@@ -6,7 +6,7 @@
 resources:
   containers:
   - container: builder
-    image: openmiko/openmiko:latest
+    image: tachang/openmiko:latest
 
 
 container: builder
@@ -18,6 +18,3 @@ steps:
 
 trigger:
 - master
-
-pool:
-  vmImage: 'ubuntu-latest'

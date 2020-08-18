@@ -8,8 +8,10 @@ resources:
   - container: builder
     image: tachang/openmiko:latest
 
-
 container: builder
+
+pool:
+  vmImage: 'ubuntu-16.04'
 
 steps:
 - script: |

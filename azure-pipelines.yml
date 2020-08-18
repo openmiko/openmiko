@@ -19,6 +19,7 @@ container: builder
 
 steps:
 - script: |
-    cd /openmiko/build/buildroot-2016.02/
     echo "Starting make"
     make
+  workingDirectory: /openmiko/build/buildroot-2016.02
+

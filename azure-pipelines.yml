@@ -10,17 +10,20 @@ resources:
 
 
 pool:
-  vmImage: 'builder'
+  vmImage: 'ubuntu-16.04'
+container: builder
 
 trigger:
 - master
 
-
 steps:
 - script: |
     echo "Starting make"
+    pwd
+    who
+    ls -al /openmiko
+    ls -al /openmiko/build/buildroot-2016.02
     make clean
     make
   workingDirectory: /openmiko/build/buildroot-2016.02
-  container: builder
 

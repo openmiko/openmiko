@@ -10,7 +10,7 @@ resources:
 
 
 pool:
-  vmImage: 'ubuntu-16.04'
+  vmImage: 'tachang/openmiko:latest'
 
 trigger:
 - master

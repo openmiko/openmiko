@@ -11,8 +11,8 @@ trigger:
 
 steps:
 - script: |
-    apt update && apt upgrade -y && \
-    apt install -y \
+    sudo apt update && sudo apt upgrade -y && \
+    sudo apt install -y \
     build-essential \
     git \
     autoconf \
@@ -30,5 +30,18 @@ steps:
     nfs-kernel-server \
     tftpd-hpa \
     curl
+
+    sudo locale-gen --no-purge en_US.UTF-8
+
+    sudo mkdir -p /openmiko/build
+    cd /openmiko/build
+    sudo wget https://buildroot.org/downloads/buildroot-2016.02.tar.gz;
+    sudo tar xvf buildroot-2016.02.tar.gz;
+
+    cd "/openmiko/build/buildroot-2016.02"
+
+    ls -al
+    /s/buildscripts/setup_buildroot.sh
+
   displayName: 'Installing System Packages'
 

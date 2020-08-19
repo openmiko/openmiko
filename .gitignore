@@ -3,3 +3,4 @@ build/
 .DS_Store
 sharedfiles
 openmiko-output.tar.gz
+output

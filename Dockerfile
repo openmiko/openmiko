@@ -58,5 +58,3 @@ RUN /src/buildscripts/setup_buildroot.sh
 # VOLUME /openmiko/build/buildroot-2016.02/output
 
 WORKDIR /openmiko
-
-ENTRYPOINT ["tail", "-f", "/dev/null"]

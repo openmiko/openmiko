@@ -40,7 +40,9 @@ steps:
     cd "/openmiko/build/buildroot-2016.02"
 
     ls -al
-    /s/buildscripts/setup_buildroot.sh
+    /home/vsts/work/1/s/buildscripts/setup_buildroot.sh
+    cd /openmiko/build/buildroot-2016.02
+    sudo make
 
   displayName: 'Installing System Packages'
 

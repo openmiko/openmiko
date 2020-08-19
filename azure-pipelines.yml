@@ -10,8 +10,7 @@ trigger:
 - master
 
 steps:
-- script: |
-    sudo apt update && sudo apt upgrade -y && \
+- script: |    
     sudo apt install -y \
     build-essential \
     git \

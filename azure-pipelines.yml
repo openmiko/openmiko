@@ -3,46 +3,23 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
+resources:
+  containers:
+  - container: builder
+    image: openmiko/openmiko:latest
+
+
 pool:
   vmImage: 'ubuntu-16.04'
+container: builder
 
 trigger:
 - master
 
 steps:
-- script: |    
-    sudo apt install -y \
-    build-essential \
-    git \
-    autoconf \
-    cmake \
-    python \
-    unzip \
-    cpio \
-    wget \
-    vim \
-    locales \
-    lzop \
-    bc \
-    nano \
-    libncurses5-dev \
-    nfs-kernel-server \
-    tftpd-hpa \
-    curl
-
-    sudo locale-gen --no-purge en_US.UTF-8
-
-    sudo mkdir -p /openmiko/build
-    cd /openmiko/build
-    sudo wget https://buildroot.org/downloads/buildroot-2016.02.tar.gz;
-    sudo tar xvf buildroot-2016.02.tar.gz;
-
-    cd "/openmiko/build/buildroot-2016.02"
-
-    ls -al
-    /home/vsts/work/1/s/buildscripts/setup_buildroot.sh
-    cd /openmiko/build/buildroot-2016.02
+- script: |
+    echo "Starting make"
+    ls -al /openmiko/build/buildroot-2016.02
     sudo make
-
-  displayName: 'Installing System Packages'
+  workingDirectory: /openmiko/build/buildroot-2016.02
 

@@ -10,12 +10,11 @@ resources:
 
 
 pool:
-  vmImage: 'tachang/openmiko:latest'
+  vmImage: 'builder'
 
 trigger:
 - master
 
-container: builder
 
 steps:
 - script: |
@@ -23,4 +22,5 @@ steps:
     make clean
     make
   workingDirectory: /openmiko/build/buildroot-2016.02
+  container: builder
 

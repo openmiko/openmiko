@@ -20,6 +20,6 @@ steps:
 - script: |
     echo "Starting make"
     ls -al /openmiko/build/buildroot-2016.02
-    sudo make
+    make
   workingDirectory: /openmiko/build/buildroot-2016.02
 

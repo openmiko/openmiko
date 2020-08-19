@@ -19,11 +19,8 @@ trigger:
 steps:
 - script: |
     echo "Starting make"
-    pwd
-    who
-    ls -al /openmiko
+    id
     ls -al /openmiko/build/buildroot-2016.02
-    make clean
-    make
+    sudo make
   workingDirectory: /openmiko/build/buildroot-2016.02
 

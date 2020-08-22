@@ -66,35 +66,32 @@ dd if=u-boot-lzo-with-spl.bin of=/dev/mtd0
 
 ## On Mac OS
 
-You need to use the `diskutility` command line. Format your card using whatever filesystem you want for the first partition and FAT32 for the 2nd partition.
 
-The first partition needs to be at least the size of the rootfs.ext2 file. We will `dd` the image onto the first partition and use the 2nd to store cross OS compatible files such as configuration.
+reading demo.bin
+
+You need to use the `diskutility` command line. We need two partitions:
+
+1. FAT32 (used for cross platform configuration and allowing the stock bootloader to read demo.bin)
+2. EXT4 For the 2nd partition (or ExFAT and then overwrite with `dd`)
+
+The second partition needs to be at least 250MB though that may change. Check the actual size of the `ext2` image.
+
+`diskutil partitionDisk disk2 3 mbr fat32 EZCONFIG 2GB exfat rootfs 2GB "Free Space" freespace 0`
 
 
-`diskutil partitionDisk disk2 2 mbr exfat rootfs 2G fat32 DATA 0`
-
-After partitioning `diskutil list` should show:
+After partitioning `diskutil list` should show (I am using a 16GB microsd card):
 
 ```
 /dev/disk2 (internal, physical):
    #:                       TYPE NAME                    SIZE       IDENTIFIER
    0:     FDisk_partition_scheme                        *15.9 GB    disk2
-   1:               Windows_NTFS rootfs                  2.0 GB     disk2s1
-   2:                 DOS_FAT_32 DATA                    13.9 GB    disk2s2
+   1:                 DOS_FAT_32 EZCONFIG                2.0 GB     disk2s1
+   2:               Windows_NTFS rootfs                  2.0 GB     disk2s2
 ```
 
 ### Overwrite the the rootfs parition with an ext4 image. We use `dd` for this.
 
 `sudo dd if=rootfs.ext2 of=/dev/rdisk2s1 bs=64k`
-
-### Resize rootfs
-
-You may need to eject the disk and then reinsert it again to be able to run this command.
-Oterhwise you will get a an error:
-
-`open: Resource busy while opening /dev/disk2s1`
-
-`sudo $(brew --prefix e2fsprogs)/sbin/resize2fs /dev/disk2s1`
 
 
 

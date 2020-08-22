@@ -1,0 +1,18 @@
+--- a/CMakeLists.txt	2020-08-20 16:51:34.394434877 +0000
++++ b/CMakeLists.txt	2020-08-20 16:55:58.511721473 +0000
+@@ -193,6 +193,15 @@
+ endif()
+ INCLUDE(CPack)
+ 
++set(TOOL_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/libfilter.so ;
++               ${CMAKE_CURRENT_SOURCE_DIR}/libsharedmem.so ;
++               ${CMAKE_CURRENT_SOURCE_DIR}/libwrap.so ;
++   )
++
++foreach (LIB ${TOOL_LIBS})
++    install(FILES ${LIB} DESTINATION lib)
++endforeach (LIB)
++
+ install (TARGETS getimage DESTINATION bin)
+ install (TARGETS setconf DESTINATION bin)
+ install (TARGETS motor DESTINATION bin)

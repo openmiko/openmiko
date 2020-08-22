@@ -50,11 +50,10 @@ WORKDIR "/openmiko/build/buildroot-2016.02"
 COPY . /src
 
 
-RUN /src/buildscripts/setup_buildroot.sh
-
+# RUN /src/buildscripts/setup_buildroot.sh
 
 # RUN make
 
-# VOLUME /openmiko/build/buildroot-2016.02/output
+RUN pip install click
 
 WORKDIR /openmiko

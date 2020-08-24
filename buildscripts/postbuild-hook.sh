@@ -29,12 +29,14 @@ cp $IMAGES/uImage.lzma $RELEASE_DIR
 cp $IMAGES/u-boot-lzo-with-spl.bin $RELEASE_DIR
 
 
+MKIMAGE=/openmiko/build/buildroot-2016.02/output/build/uboot-openmiko/tools/mkimage
+if [ ! -f "/usr/sbin/mkimage" ]; then
+	ln -s $MKIMAGE /usr/sbin/mkimage
+fi
 
 # Pack up the image so it can be installed using the factory demo.bin
 # method. Use the default firmware for some pieces.
 #
-# Usage: packer.py [OPTIONS] [KERNEL] [ROOTFS] [DRIVER] [APPFS] [OUTFILE]
-
 # Maximum sizes
 #                                                                                                                                                                      
 # "kernel" - 0x200000 or 2,097,152 bytes
@@ -44,31 +46,81 @@ cp $IMAGES/u-boot-lzo-with-spl.bin $RELEASE_DIR
 
 
 KERNEL="$IMAGES/uImage.lzma"
+PADDED_KERNEL="$IMAGES/uImagePadded.lzma"
 
-# ROOTFS Must be a Squashfs filesystem
-ROOTFS=/src/stock_firmware/wyzecam_v2/4.9.6.156/flash/rootfs.bin
-if [[ -f "$IMAGES/rootfs.squashfs" ]]; then
-	echo "Using custom rootfs/squashfs instead of stock rootfs"
-	ROOTFS="$IMAGES/rootfs.squashfs"
+ROOTFSFILE="$IMAGES/rootfs.tar.gz"
+JFFSROOTIMG="$IMAGES/rootfs.jffs2"
+
+
+KERNEL_MAXSIZE=$((16#200000))
+ROOTFS_MAXSIZE=$(( $((16#350000)) + $((16#a0000)) + $((16#4a0000)) ))
+FLASH_MAXSIZE=$(( $KERNEL_MAXSIZE + $ROOTFS_MAXSIZE ))
+
+
+# Checks
+
+KERNEL_BYTES=$(wc -c < "$KERNEL")
+if [ $KERNEL_BYTES -ge $KERNEL_MAXSIZE ]; then
+	echo "Error: Kernel image must be less than $KERNEL_MAXSIZE. It is $KERNEL_BYTES."
+	exit 1
 fi
 
-DRIVER=/src/stock_firmware/wyzecam_v2/4.9.6.156/flash/driver.bin
-
-
-APPFS=/src/stock_firmware/wyzecam_v2/4.9.6.156/flash/appfs.bin
-if [[ -f "$IMAGES/appfs.bin" ]]; then
-	echo "Using custom appfs (jffs2)"
-	APPFS="$IMAGES/appfs.bin"
+ROOTFS_BYTES=$(wc -c < "$JFFSROOTIMG")
+if [ $ROOTFS_BYTES -ge $ROOTFS_MAXSIZE ]; then
+	echo "Error: rootfs image must be less than $ROOTFS_MAXSIZE. It is $ROOTFS_BYTES."
+	exit 1
 fi
 
-# OUTFILE="${RELEASE_DIR}/openmiko_${NOW}_${REVISION_HASH}_demo.bin"
+
+# Pad the kernel to max size
+cp $KERNEL $PADDED_KERNEL
+truncate -s $KERNEL_MAXSIZE $PADDED_KERNEL
+
+
+JFFS2=$BASE_DIR/host/usr/sbin/mkfs.jffs2 
+
+mkdir -p $IMAGES/jffsroot
+cp $ROOTFSFILE $IMAGES/jffsroot
+
+$JFFS2 -d $IMAGES/jffsroot -e 0x8000 -o $JFFSROOTIMG
+
+
+
+# Combine kernel and rootfs into one file and pad it to total size of flash
+KERNEL_AND_ROOT="$IMAGES/kernel_and_root.bin"
+cat $PADDED_KERNEL $JFFSROOTIMG > $KERNEL_AND_ROOT
+truncate -s $FLASH_MAXSIZE $KERNEL_AND_ROOT
+
+
+# Make an image for flashing
 OUTFILE="${RELEASE_DIR}/openmiko_firmware.bin"
+$MKIMAGE -A MIPS -O linux -T firmware -C none -a 0 -e 0 -n jz_fw -d $KERNEL_AND_ROOT $OUTFILE
 
 
-MKIMAGE=/openmiko/build/buildroot-2016.02/output/build/uboot-openmiko/tools/mkimage
-if [ ! -f "/usr/sbin/mkimage" ]; then
-	ln -s $MKIMAGE /usr/sbin/mkimage
-fi
+cp $OUTFILE $RELEASE_DIR/demo.bin
+echo "Firmware created: $RELEASE_DIR/demo.bin"
+
+
+
+# # ROOTFS Must be a Squashfs filesystem
+# ROOTFS=/src/stock_firmware/wyzecam_v2/4.9.6.156/flash/rootfs.bin
+# if [[ -f "$IMAGES/rootfs.squashfs" ]]; then
+# 	echo "Using custom rootfs/squashfs instead of stock rootfs"
+# 	ROOTFS="$IMAGES/rootfs.squashfs"
+# fi
+
+# DRIVER=/src/stock_firmware/wyzecam_v2/4.9.6.156/flash/driver.bin
+
+
+# APPFS=/src/stock_firmware/wyzecam_v2/4.9.6.156/flash/appfs.bin
+# if [[ -f "$IMAGES/appfs.bin" ]]; then
+# 	echo "Using custom appfs (jffs2)"
+# 	APPFS="$IMAGES/appfs.bin"
+# fi
+
+
+
+
 
 cat << EOF
 
@@ -79,15 +131,15 @@ AppFS  ==> $APPFS
 
 EOF
 
-/usr/bin/python /src/utilities/packer.py $KERNEL $ROOTFS $DRIVER $APPFS $OUTFILE
+# /usr/bin/python /src/utilities/packer.py $KERNEL $ROOTFS $DRIVER $APPFS $OUTFILE
 
-cp $OUTFILE $RELEASE_DIR/demo.bin
-echo "Firmware created: $RELEASE_DIR/demo.bin"
+# cp $OUTFILE $RELEASE_DIR/demo.bin
+# echo "Firmware created: $RELEASE_DIR/demo.bin"
 
-cd $DEFAULT_IMAGE_DIR
+# cd $DEFAULT_IMAGE_DIR
 
-if [[ -f rootfs.ext2 ]]; then
-	echo "Compressing rootfs.ext2"
-	tar czvf $RELEASE_DIR/rootfs.ext2.tar.gz rootfs.ext2
-fi
+# if [[ -f rootfs.ext2 ]]; then
+# 	echo "Compressing rootfs.ext2"
+# 	tar czvf $RELEASE_DIR/rootfs.ext2.tar.gz rootfs.ext2
+# fi
 

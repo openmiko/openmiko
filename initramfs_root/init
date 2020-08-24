@@ -1,0 +1,44 @@
+#!/bin/sh
+# devtmpfs does not get automounted for initramfs
+/bin/mount -t devtmpfs devtmpfs /dev
+exec 0</dev/console
+exec 1>/dev/console
+exec 2>/dev/console
+
+echo "Starting full root buildout"
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+
+echo "Mounted core filesystems"
+
+mkdir -p /jffsroot
+mount -t jffs2 /dev/mtdblock2 /jffsroot
+
+echo "Mounted jffsroot"
+
+mkdir -p /newroot
+mount -t tmpfs newroot /newroot
+tar -xvf /jffsroot/rootfs.tar.gz -C /newroot
+
+if [ $? != 0 ]
+then
+  echo "Extracting root filesystem failed."
+  exec /bin/sh
+  exit 1
+fi
+
+umount /jffsroot
+
+/bin/busybox --install -s
+
+
+# switch_root moves already mounted /proc, /dev, /sys and /run to newroot
+exec switch_root /newroot /sbin/init
+
+# /sbin/init can only be started as PID 1 but we are already PID 1
+# The solution is to execute `exec /sbin/init` while we are still inside
+# Will inherit the PID (PID 1)
+
+#echo "Starting /sbin/init"
+#exec /sbin/init $*

@@ -43,6 +43,7 @@ CONFIG_CMDLINE="console=ttyS1,115200n8 mem=96M@0x0 ispmem=8M@0x6000000 rmem=24M@
 Rebuild skeleton for rootfs and make changes without having to rebuild everything
 
 ```
+
 rm -rf target
 mkdir -p target/sbin
 mkdir -p target/lib
@@ -54,9 +55,20 @@ rm -f build/.root
 find . -name ".stamp_target_installed*" -print | xargs rm -f
 ```
 
-This seems to rebuild the initramfs after you change it.
+
+
+
+
+### Building busybox static binary for use in initramfs
+
+Since we use initramfs and bundle in a starting root filesystem into the kernel we need some small utilities to populate it to start. The file `config/busybox-min.conf` is used for a minimal busybox static binary compilation.
+
+You can copy this file over to the `output/build/busybox-version`
+
+After the binary is built copy it to `initramfs_root/bin`
+
+Then remake the initramfs filesystem:
 
 ```
 make rootfs-initramfs
 ```
-

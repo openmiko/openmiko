@@ -10,9 +10,9 @@ cd /openmiko/build/buildroot-2016.02
 
 # ffmpeg doesn't seem to build out of the box so use our own
 rm -rf /openmiko/build/buildroot-2016.02/package/ffmpeg
-cp -r /src/custompackages/package/ffmpeg /openmiko/build/buildroot-2016.02/package/
 
-# cp -r /src/custompackages/package/* /openmiko/build/buildroot-2016.02/package/
+#cp -r /src/custompackages/package/ffmpeg /openmiko/build/buildroot-2016.02/package/
+cp -r /src/custompackages/package/* /openmiko/build/buildroot-2016.02/package/
 
 
 # Avoid FPU bug on XBurst CPUs
@@ -37,7 +37,11 @@ cp /src/legacy_src/kernel-3.10.14.tar.xz dl/
 
 # Loads up our custom configuration
 make ingenic_t20_defconfig
+
+# We just loaded it but these commands are how you save it back (here for reference)
+# Technically should be a no-op
 make savedefconfig BR2_DEFCONFIG=/src/config/ingenic_t20_defconfig
+make linux-update-defconfig
 
 # Start the build
 make

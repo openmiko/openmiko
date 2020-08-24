@@ -93,6 +93,8 @@ After partitioning `diskutil list` should show (I am using a 16GB microsd card):
 
 `sudo dd if=rootfs.ext2 of=/dev/rdisk2s1 bs=64k`
 
+Put the sdcard in the camera. Make sure all power is off to camera. Hold down the setup button while it is off and plug in the power. The blue LED will turn on. Do not cut power to the unit un
+
 
 
 

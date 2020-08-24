@@ -1,0 +1,44 @@
+#!/bin/sh
+#
+# Start the wifi....
+#
+
+case "$1" in
+  start)
+
+	# echo "Preparing which shared library paths to search"
+	# mv /etc/ld.so.conf.template /etc/ld.so.conf
+	# ldconfig
+	
+	echo "Starting wifi..."
+
+	mount -t jffs2 /dev/mtdblock4 /apps	
+	insmod /apps/lib/modules/3.10.14/kernel/drivers/net/wireless/rtl818x/rtl8189FS/8189fs.ko
+
+	CONFIGPATH="/apps"
+
+	# If there is a file called wpa_supplicant.conf then copy it
+	if [[ -e "/sdcard/wpa_supplicant.conf" ]]; then
+		cp /sdcard/wpa_supplicant.conf /apps/wpa_supplicant.conf
+	fi
+	
+	/apps/wpa_supplicant -Dnl80211 -i wlan0 -c "$CONFIGPATH/wpa_supplicant.conf" -B
+
+	udhcpc -i wlan0 -b -A 20
+
+	;;
+  stop)
+	printf "Stopping wifi..."
+	;;
+  restart|reload)
+	"$0" stop
+	"$0" start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac	
+
+exit $?
+
+

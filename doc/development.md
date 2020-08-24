@@ -36,3 +36,27 @@ CONFIG_CMDLINE="console=ttyS1,115200n8 mem=96M@0x0 ispmem=8M@0x6000000 rmem=24M@
 ## RootFS
 
 
+
+
+## Buildroot
+
+Rebuild skeleton for rootfs and make changes without having to rebuild everything
+
+```
+rm -rf target
+mkdir -p target/sbin
+mkdir -p target/lib
+mkdir -p target/usr/lib
+cp -a staging/sbin/* target/sbin/
+cp -a staging/lib/* target/lib/
+cp -a staging/usr/lib/* target/usr/lib/
+rm -f build/.root
+find . -name ".stamp_target_installed*" -print | xargs rm -f
+```
+
+This seems to rebuild the initramfs after you change it.
+
+```
+make rootfs-initramfs
+```
+

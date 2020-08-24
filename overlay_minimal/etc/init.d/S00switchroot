@@ -1,0 +1,83 @@
+#!/bin/sh
+#
+# Switch root
+#
+
+
+tar -cv --exclude='sdcard' --exclude='tmp' --exclude='apps' --exclude='proc' --exclude='sys' --exclude='dev' -f - / | gzip -9 > rootfs.tar.gz
+gunzip -c rootfs.tar.gz | tar xvf -
+
+
+	# mount --move /dev /mnt/dev
+	# mount --move /proc /mnt/proc
+	# mount --move /sys /mnt/sys
+	# mount --move /run /mnt/run
+	# mount --move /dev/pts /mnt/dev/pts
+
+case "$1" in
+  start)
+
+	killall wpa_supplicant
+	umount /sdcard/
+	umount /apps
+
+
+	mount -t tmpfs tmpfs /mnt
+
+	mkdir -p /mnt/dev
+	mkdir -p /mnt/proc
+	mkdir -p /mnt/sys
+	mkdir -p /mnt/run
+	mkdir -p /mnt/root
+
+	# mount temporary filesystems
+	mount -n -t devtmpfs devtmpfs /mnt/dev
+	mount -n -t proc     proc     /mnt/proc
+	mount -n -t sysfs    sysfs    /mnt/sys
+	mount -n -t tmpfs    tmpfs    /mnt/run
+	mount -n -t devpts   devpts   /mnt/dev/pts
+
+	cp -a /bin /mnt/
+	cp -a /etc /mnt/
+	cp -a /sbin /mnt/
+	cp -a /lib /mnt/
+
+	cp -a /usr/bin /mnt/usr/
+	cp -a /usr/sbin /mnt/usr/
+	cp -a /usr/lib /mnt/usr/
+
+	cp -a /var/lib /mnt/var/
+	cp -a /var/lock /mnt/var/
+	cp -a /var/run /mnt/var/
+	cp -a /var/tmp /mnt/var/
+
+	mkdir -p /mnt/oldroot
+
+
+
+
+	pivot_root /mnt /mnt/oldroot
+
+	umount -lf /oldroot/dev/
+	umount /oldroot/dev/shm
+	umount -lf /oldroot/tmp
+	umount -lf /oldroot/run/
+
+
+	exec switch_root /mnt /linuxrc
+
+
+	;;
+  stop)
+	;;
+  restart|reload)
+	stop
+	start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?
+

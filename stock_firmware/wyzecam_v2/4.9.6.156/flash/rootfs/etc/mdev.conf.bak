@@ -1,0 +1,14 @@
+#### #Move input devices to input directory ####
+# event.* 0:0     0660    @(mkdir -p input&&mv $MDEV input)
+# mice	0:0	    0660	@(mkdir -p input&&mv $MDEV input)
+# mouse.*	0:0	    0660	@(mkdir -p input&&mv $MDEV input)
+
+### UDisk ###
+# sd[a-z][1-9]    0:0 666     */etc/hotplug/udisk_hotplug
+
+### SD Card ###
+# mmcblk[0-9]p[0-9]  0:0 666  */etc/hotplug/sdcard_hotplug
+
+
+#dongle
+# hidraw[0-9]  0:0 666  */etc/hotplug/dongle_hotplug

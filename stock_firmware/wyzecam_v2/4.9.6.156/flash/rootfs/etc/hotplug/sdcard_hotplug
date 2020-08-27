@@ -1,0 +1,25 @@
+#!/bin/sh
+
+#output=/dev/null
+output=/tmp/mdev.log
+echo "1 4 1 4" > /proc/sys/kernel/printk
+
+DIR=/media/sdcard
+if [ "$ACTION" == "add" ]; then
+    {
+        if [ "$DEVNAME" != "" ]; then
+            mkdir -p $DIR
+            mount ${PWD}/${DEVNAME}  $DIR
+            echo "add a sdcard: ${PWD}/${DEVNAME}" > $output
+        fi
+}
+elif [ "$ACTION" == "remove" ]; then
+    {
+        if [ "$DEVNAME" != "" ]; then
+            echo "remove a sdcard: ${PWD}/${DEVNAME}" > $output
+            umount  $DIR
+            sleep 1
+            rm -rf $DIR
+        fi
+}
+fi

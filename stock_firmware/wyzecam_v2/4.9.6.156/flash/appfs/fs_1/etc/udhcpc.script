@@ -1,0 +1,95 @@
+#!/bin/sh
+set -a
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin
+
+TAG="udhcpc"
+NET_TYPE='dhcp'
+PRIORITY="daemon.notice"
+RESOLV_CONF="/etc/resolv.conf"
+
+
+update_interface()
+{
+  [ -n "$broadcast" ] && BROADCAST="broadcast $broadcast"
+  [ -n "$subnet" ] && NETMASK="netmask $subnet"
+  # /sbin/ifconfig $interface:0 down # succuss to ifdown eth0:0
+  /sbin/ifconfig $interface $ip $BROADCAST $NETMASK
+  /usr/bin/logger -t $TAG -p $PRIORITY "udhcp ifconfig $interface IP $ip $BROADCAST $NETMASK"
+}
+
+update_routes()
+{
+  if [ -n "$router" ]
+  then
+    echo "deleting routes"
+    while /sbin/route del default gw 0.0.0.0 dev $interface
+    do :
+    done
+
+    for i in $router
+    do
+      /sbin/route add default gw $i dev $interface
+    done
+    /usr/bin/logger -t $TAG -p $PRIORITY "$udhcp route $interface router $router"
+  fi
+}
+
+update_dns()
+{
+  echo -n > $RESOLV_CONF
+  [ -n "$domain" ] && echo domain $domain >> $RESOLV_CONF
+  for i in $dns
+  do
+    echo adding dns $i
+    echo nameserver $i >> $RESOLV_CONF
+  done
+  /usr/bin/logger -t $TAG -p $PRIORITY "$interface dns $dns"
+}
+
+deconfig()
+{
+  #/sbin/ifconfig $interface 0.0.0.0
+  /usr/bin/logger -t $TAG -p $PRIORITY "$interface deconfig"
+}
+
+case "$1" in
+  bound)
+    update_interface;
+    update_routes;
+    update_dns;
+    /ipc/bin/ccli dhcpnotify -act list
+  ;;
+
+  renew)
+    update_interface;
+    update_routes;
+    update_dns;
+    /ipc/bin/ccli dhcpnotify -act list
+  ;;
+
+  deconfig)
+    deconfig;
+  ;;
+
+  leasefail)
+    /ipc/bin/networking $interface udhcpfail
+    /ipc/bin/ccli dhcpnotify -act list
+    # exit 1
+  ;;
+
+  nak)
+    /ipc/bin/networking $interface udhcpfail
+    /ipc/bin/ccli dhcpnotify -act list
+  ;;
+
+  *)
+    echo "
+    Usage: $0 {bound|renew|deconfig}
+           action now is <$1>
+    "
+    exit 1
+    ;;
+esac
+
+exit 0

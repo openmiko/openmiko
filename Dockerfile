@@ -50,5 +50,4 @@ COPY . /src
 
 RUN /src/buildscripts/setup_buildroot.sh
 
-
 WORKDIR /openmiko

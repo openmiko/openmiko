@@ -1,0 +1,17 @@
+#!/bin/sh
+
+echo "1 4 1 4" > /proc/sys/kernel/printk
+
+if [ "$ACTION" == "add" ]; then
+{
+        if [ "$DEVNAME" != "" ]; then
+            echo "add a dongle: ${PWD}/${DEVNAME}"
+        fi
+}
+elif [ "$ACTION" == "remove" ]; then
+{
+        if [ "$DEVNAME" != "" ]; then
+            echo "remove a dongle: ${PWD}/${DEVNAME}"
+        fi
+}
+fi

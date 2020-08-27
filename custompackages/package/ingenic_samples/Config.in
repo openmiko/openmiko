@@ -1,4 +1,4 @@
-config BR2_PACKAGE_V4L2RTSPSERVER
-	bool "v4l2rtspserver"
+config BR2_PACKAGE_INGENIC_SAMPLES
+	bool "ingenic_samples"
 	help
-	  v4l2rtspserver
+	  ingenic_samples

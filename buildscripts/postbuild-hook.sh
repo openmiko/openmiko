@@ -48,7 +48,7 @@ fi
 KERNEL="$IMAGES/uImage.lzma"
 PADDED_KERNEL="$IMAGES/uImagePadded.lzma"
 
-ROOTFSFILE="$IMAGES/rootfs.tar.gz"
+ROOTFSFILE="$IMAGES/rootfs.tar.xz"
 JFFSROOTIMG="$IMAGES/rootfs.jffs2"
 
 
@@ -65,11 +65,6 @@ if [ $KERNEL_BYTES -ge $KERNEL_MAXSIZE ]; then
 	exit 1
 fi
 
-ROOTFS_BYTES=$(wc -c < "$JFFSROOTIMG")
-if [ $ROOTFS_BYTES -ge $ROOTFS_MAXSIZE ]; then
-	echo "Error: rootfs image must be less than $ROOTFS_MAXSIZE. It is $ROOTFS_BYTES."
-	exit 1
-fi
 
 
 # Pad the kernel to max size
@@ -79,11 +74,19 @@ truncate -s $KERNEL_MAXSIZE $PADDED_KERNEL
 
 JFFS2=$BASE_DIR/host/usr/sbin/mkfs.jffs2 
 
+rm -rf $IMAGES/jffsroot
 mkdir -p $IMAGES/jffsroot
 cp $ROOTFSFILE $IMAGES/jffsroot
 
 $JFFS2 -d $IMAGES/jffsroot -e 0x8000 -o $JFFSROOTIMG
 
+
+
+ROOTFS_BYTES=$(wc -c < "$JFFSROOTIMG")
+if [ $ROOTFS_BYTES -ge $ROOTFS_MAXSIZE ]; then
+	echo "Error: rootfs image must be less than $ROOTFS_MAXSIZE. It is $ROOTFS_BYTES."
+	exit 1
+fi
 
 
 # Combine kernel and rootfs into one file and pad it to total size of flash
@@ -102,44 +105,12 @@ echo "Firmware created: $RELEASE_DIR/demo.bin"
 
 
 
-# # ROOTFS Must be a Squashfs filesystem
-# ROOTFS=/src/stock_firmware/wyzecam_v2/4.9.6.156/flash/rootfs.bin
-# if [[ -f "$IMAGES/rootfs.squashfs" ]]; then
-# 	echo "Using custom rootfs/squashfs instead of stock rootfs"
-# 	ROOTFS="$IMAGES/rootfs.squashfs"
-# fi
-
-# DRIVER=/src/stock_firmware/wyzecam_v2/4.9.6.156/flash/driver.bin
-
-
-# APPFS=/src/stock_firmware/wyzecam_v2/4.9.6.156/flash/appfs.bin
-# if [[ -f "$IMAGES/appfs.bin" ]]; then
-# 	echo "Using custom appfs (jffs2)"
-# 	APPFS="$IMAGES/appfs.bin"
-# fi
-
-
-
-
-
 cat << EOF
 
-Kernel ==> $KERNEL
-RootFS ==> $ROOTFS
-Driver ==> $DRIVER
-AppFS  ==> $APPFS
+Build and release complete.
+
+Kernel ==> $KERNEL ($KERNEL_BYTES / $KERNEL_MAXSIZE )
+RootFS ==> $ROOTFS ($ROOTFS_BYTES / $ROOTFS_MAXSIZE )
 
 EOF
-
-# /usr/bin/python /src/utilities/packer.py $KERNEL $ROOTFS $DRIVER $APPFS $OUTFILE
-
-# cp $OUTFILE $RELEASE_DIR/demo.bin
-# echo "Firmware created: $RELEASE_DIR/demo.bin"
-
-# cd $DEFAULT_IMAGE_DIR
-
-# if [[ -f rootfs.ext2 ]]; then
-# 	echo "Compressing rootfs.ext2"
-# 	tar czvf $RELEASE_DIR/rootfs.ext2.tar.gz rootfs.ext2
-# fi
 

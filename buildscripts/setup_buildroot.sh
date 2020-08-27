@@ -35,13 +35,15 @@ cp /src/config/uClibc-ng.config package/uclibc
 mkdir -p dl
 cp /src/legacy_src/kernel-3.10.14.tar.xz dl/
 
+
+
 # Loads up our custom configuration
 make ingenic_t20_defconfig
 
 # We just loaded it but these commands are how you save it back (here for reference)
 # Technically should be a no-op
 make savedefconfig BR2_DEFCONFIG=/src/config/ingenic_t20_defconfig
-make linux-update-defconfig
+# make linux-update-defconfig
 
 # Start the build
 make

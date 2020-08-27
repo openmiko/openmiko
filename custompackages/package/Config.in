@@ -1636,7 +1636,6 @@ endmenu
 menu "buildroot-packages [external repo]"
 	source "package/v4l2rtspserver/Config.in"
 	source "package/oss/Config.in"
-	source "package/mtk-nvram/Config.in"
 	source "package/ingenic_samples/Config.in"
 endmenu
 

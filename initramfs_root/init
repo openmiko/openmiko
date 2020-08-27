@@ -18,8 +18,16 @@ mount -t jffs2 /dev/mtdblock2 /jffsroot
 echo "Mounted jffsroot"
 
 mkdir -p /newroot
-mount -t tmpfs newroot /newroot
-tar -xvf /jffsroot/rootfs.tar.gz -C /newroot
+
+# Setup zram root file system. Use 4K blocks because zram
+# does not include any option to control block size. It is hard-coded.
+
+echo 50M > /sys/block/zram0/disksize
+busybox mke2fs /dev/zram0 -b 4096
+mount /dev/zram0 /newroot
+
+#mount -t tmpfs newroot /newroot
+tar -xvf /jffsroot/rootfs.tar.xz -C /newroot
 
 if [ $? != 0 ]
 then
@@ -30,11 +38,22 @@ fi
 
 umount /jffsroot
 
-/bin/busybox --install -s
+rm -rf /newroot/dev
+rm -rf /newroot/sys
 
+mkdir /newroot/dev
+mkdir /newroot/sys
 
+mount --move /dev /newroot/dev
+mount --move /sys /newroot/sys
+mount --move /proc /newroot/proc
+
+#/bin/busybox --install -s
+# ls -i /
+
+echo "Switching root to /newroot"
 # switch_root moves already mounted /proc, /dev, /sys and /run to newroot
-exec switch_root /newroot /sbin/init
+exec busybox switch_root /newroot /sbin/init
 
 # /sbin/init can only be started as PID 1 but we are already PID 1
 # The solution is to execute `exec /sbin/init` while we are still inside

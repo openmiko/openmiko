@@ -129,8 +129,8 @@ extern "C"
 #endif
 
 
-#define SENSOR_WIDTH_SECOND		640
-#define SENSOR_HEIGHT_SECOND		360
+#define SENSOR_WIDTH_SECOND		1920
+#define SENSOR_HEIGHT_SECOND		1080
 
 #define NR_FRAMES_TO_SAVE		300
 #define STREAM_BUFFER_SIZE		(1 * 1024 * 1024)
@@ -149,7 +149,7 @@ extern "C"
 
 #define SLEEP_TIME			1
 
-#define FS_CHN_NUM			2 //MIN 1,MAX 2
+#define FS_CHN_NUM			1 //MIN 1,MAX 2
 #define IVS_CHN_ID          1
 
 #define CH0_INDEX  0

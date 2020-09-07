@@ -6,3 +6,7 @@ openmiko-output.tar.gz
 output
 tmp
 release
+videocapture
+
+tempstaging/*
+!tempstaging/README.md

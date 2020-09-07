@@ -642,7 +642,6 @@ menu "External python modules"
 	source "package/python-enum/Config.in"
 	source "package/python-enum34/Config.in"
 	source "package/python-flask/Config.in"
-	source "package/python-flask-restful/Config.in"
 	source "package/python-flup/Config.in"
 	source "package/python-gobject/Config.in"
 	source "package/python-html5lib/Config.in"
@@ -1634,9 +1633,15 @@ endif
 endmenu
 
 menu "buildroot-packages [external repo]"
-	source "package/v4l2rtspserver/Config.in"
-	source "package/oss/Config.in"
+	source "package/h264bitstream/Config.in"
 	source "package/ingenic_samples/Config.in"
+	source "package/ingenic_videocap/Config.in"
+	source "package/log4cpp/Config.in"
+	source "package/oss/Config.in"
+	source "package/v4l2cpp/Config.in"
+	source "package/v4l2loopback/Config.in"
+	source "package/v4l2rtspserver/Config.in"
+
 endmenu
 
 endmenu

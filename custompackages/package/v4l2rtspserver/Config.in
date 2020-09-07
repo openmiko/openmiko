@@ -1,4 +1,8 @@
+comment "v4l2rtspserver uses v4l2cpp, log4cpp, live555, "
 config BR2_PACKAGE_V4L2RTSPSERVER
 	bool "v4l2rtspserver"
+	select BR2_PACKAGE_V4L2CPP 
+	select BR2_PACKAGE_LIVE555
+	select BR2_PACKAGE_LOG4CPP
 	help
-	  v4l2rtspserver
+	  Provides a streaming RTSP server for the target.

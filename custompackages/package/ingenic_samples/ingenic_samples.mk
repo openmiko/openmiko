@@ -16,17 +16,18 @@ define INGENIC_SAMPLES_BUILD_CMDS
 endef
 
 define INGENIC_SAMPLES_INSTALL_TARGET_CMDS
-	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-ISP-flip $(TARGET_DIR)/usr/sbin
-	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Setfps $(TARGET_DIR)/usr/sbin
-	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Decoder-jpeg $(TARGET_DIR)/usr/sbin
 	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Encoder-h264 $(TARGET_DIR)/usr/sbin
-	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Change-Resolution $(TARGET_DIR)/usr/sbin
-	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-OSD $(TARGET_DIR)/usr/sbin
-	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Snap-Raw $(TARGET_DIR)/usr/sbin
-	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Encoder-h264-IVS-move $(TARGET_DIR)/usr/sbin
-	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Encoder-jpeg $(TARGET_DIR)/usr/sbin
-	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Encoder-h264-jpeg $(TARGET_DIR)/usr/sbin
-	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Audio $(TARGET_DIR)/usr/sbin
+
+# 	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-ISP-flip $(TARGET_DIR)/usr/sbin
+# 	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Setfps $(TARGET_DIR)/usr/sbin
+# 	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Decoder-jpeg $(TARGET_DIR)/usr/sbin
+# 	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Change-Resolution $(TARGET_DIR)/usr/sbin
+# 	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-OSD $(TARGET_DIR)/usr/sbin
+# 	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Snap-Raw $(TARGET_DIR)/usr/sbin
+# 	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Encoder-h264-IVS-move $(TARGET_DIR)/usr/sbin
+# 	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Encoder-jpeg $(TARGET_DIR)/usr/sbin
+# 	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Encoder-h264-jpeg $(TARGET_DIR)/usr/sbin
+# 	$(INSTALL) -D -m 0755 $(@D)/libimp-samples/sample-Audio $(TARGET_DIR)/usr/sbin
 
 endef
 

@@ -72,3 +72,12 @@ Then remake the initramfs filesystem:
 ```
 make rootfs-initramfs
 ```
+
+
+
+H264
+
+https://stackoverflow.com/questions/24884827/possible-locations-for-sequence-picture-parameter-sets-for-h-264-stream/24890903#24890903
+
+
+

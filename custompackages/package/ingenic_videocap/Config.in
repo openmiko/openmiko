@@ -1,0 +1,4 @@
+config BR2_PACKAGE_INGENIC_VIDEOCAP
+	bool "ingenic_videocap"
+	help
+	  ingenic_videocap

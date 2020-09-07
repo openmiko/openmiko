@@ -1,0 +1,4 @@
+config BR2_PACKAGE_H264BITSTREAM
+	bool "h264bitstream"
+	help
+	  h264bitstream

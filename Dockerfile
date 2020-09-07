@@ -19,7 +19,8 @@ RUN \
   libncurses5-dev \
   nfs-kernel-server \
   tftpd-hpa \
-  curl
+  curl \
+  python3
 
 
 RUN locale-gen --no-purge en_US.UTF-8

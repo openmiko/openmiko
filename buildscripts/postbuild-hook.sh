@@ -110,7 +110,7 @@ cat << EOF
 Build and release complete.
 
 Kernel ==> $KERNEL ($KERNEL_BYTES / $KERNEL_MAXSIZE )
-RootFS ==> $ROOTFS ($ROOTFS_BYTES / $ROOTFS_MAXSIZE )
+RootFS ==> $ROOTFSFILE ($ROOTFS_BYTES / $ROOTFS_MAXSIZE )
 
 EOF
 

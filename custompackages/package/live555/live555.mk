@@ -45,7 +45,7 @@ define LIVE555_BUILD_CMDS
 endef
 
 define LIVE555_INSTALL_STAGING_CMDS
-	$(MAKE) DESTDIR=$(STAGING_DIR) -C $(@D) installstaging
+	$(MAKE) DESTDIR=$(STAGING_DIR) -C $(@D) install
 endef
 
 define LIVE555_INSTALL_TARGET_CMDS

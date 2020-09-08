@@ -14,7 +14,7 @@ case "$1" in
 
 	# If there is a file called wpa_supplicant.conf then copy it
 	if [[ -e "/sdcard/wpa_supplicant.conf" ]]; then
-		cp /sdcard/wpa_supplicant.conf /etc/wpa_supplicant.conf
+		cp /sdcard/wpa_supplicant.conf "$CONFIGPATH/wpa_supplicant.conf"
 	fi
 
 	wpa_supplicant -Dnl80211 -i wlan0 -c "$CONFIGPATH/wpa_supplicant.conf" -B

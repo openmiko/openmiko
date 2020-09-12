@@ -1,14 +1,38 @@
 # Development
 
-Run `docker-compose up -d` to automatically pull down a container with buildroot.
+
+To setup the development environment run `docker-compose up -d` to automatically pull down a container with buildroot.
+
+You can also run `docker pull openmiko/openmiko:latest` to get the latest container. 
 
 The container image is about 8GB. The reason for this is because the artifacts are all baked in.
 This reduces the amount of time needed to get up and running.
 
+Once you have the container up and running you can shell into it using:
 
+`docker exec -it -e TERM <containerid> bash` or
+`docker-compose exec builder bash`
 
+To build the firmware change you directory to:
+`/openmiko/build/buildroot-2016.02` and run `make`.
 
+This should output something like the following:
 
+```
+Peforming post rootfs build hooks
+Image Name:   jz_fw
+Created:      Sat Sep 12 15:14:33 2020
+Image Type:   MIPS Linux Firmware (uncompressed)
+Data Size:    11075584 Bytes = 10816.00 kB = 10.56 MB
+Load Address: 00000000
+Entry Point:  00000000
+Firmware created: /src/release/demo.bin
+
+Build and release complete.
+
+Kernel ==> /openmiko/build/buildroot-2016.02/output/images/uImage.lzma (2092002 / 2097152 )
+RootFS ==> /openmiko/build/buildroot-2016.02/output/images/rootfs.tar.xz (8466824 / 8978432 )
+```
 
 
 

@@ -103,6 +103,7 @@ $MKIMAGE -A MIPS -O linux -T firmware -C none -a 0 -e 0 -n jz_fw -d $KERNEL_AND_
 cp $OUTFILE $RELEASE_DIR/demo.bin
 echo "Firmware created: $RELEASE_DIR/demo.bin"
 
+cp $JFFSROOTIMG $RELEASE_DIR
 
 
 cat << EOF

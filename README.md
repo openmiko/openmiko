@@ -63,6 +63,21 @@ After about 30 seconds you should get a flashing yellow LED which indicates the 
 
 OpenMiko is actively developed and releases are only provided when the OpenMiko distribution is stable. If you want to test the development version you can easily compile it using [docker](https://www.docker.com/). More details on how to do it [here](doc/docker.md).
 
+
+## Settings
+
+These apply to the stream settings inside the JSON configuration file.
+
+### profile
+
+0 - profile Constrained Baseline
+1 - profile Main
+2 - profile High
+
+
+
+
+
 ## Issues and support
 
 If you encounter an issue which you think is a bug in the OpenMiko or the associated libraries, you are welcome to submit it here on Github: https://github.com/opsenmiko/openmiko/issues.

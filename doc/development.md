@@ -34,6 +34,16 @@ Kernel ==> /openmiko/build/buildroot-2016.02/output/images/uImage.lzma (2092002 
 RootFS ==> /openmiko/build/buildroot-2016.02/output/images/rootfs.tar.xz (8466824 / 8978432 )
 ```
 
+## Development Loop
+
+The development loop refers to the process of changing a piece of code and running it on the hardware.
+
+Running `make` will bundle up `output/target` as the root filesystem and run the script `buildscripts/postbuild-hook.sh` to create the release. Putting this demo.bin on an sdcard and moving it over is one method of loading it up. Another way is to flash the rootfs or kernel directly using an mtd partition. However this would involve scp'ing it over to the camera provided it is already up and running.
+
+
+Buildroot has a number of packages out of the box. Run `make menuconfig` and use the graphically interface to select a package. Afterwards you can run `make` and it will build it. You can also run `make-<packagename>` to rebuild that specific package.
+
+Keep in mind space is a concern and the rootfs and kernel can only be a certain size. This is due to the stock bootloader setup to only flash a portion of the 16MB flash chip. This could be changed but would require changing the stock bootloader and flashing a custom one which is not necessarily the best for the end user (who may want to go back to the original firmware).
 
 
 

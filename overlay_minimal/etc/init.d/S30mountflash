@@ -7,7 +7,10 @@ case "$1" in
   start)
  	echo "Mounting flash partitions"
 
-	umount /config
+	if [ -d /config ]
+	then
+		umount /config
+	fi
 	mount -t jffs2 /dev/mtdblock3 /config
 
 	if [ $? -ne 0 ]
@@ -18,12 +21,16 @@ case "$1" in
 		touch /config/.initialized
 	fi
 
+
 	# Should implement an optimization here to check for each file
 	# so we don't wear out flash chip
 	if [ -d /sdcard/config/ ]
 	then
+		echo "Copying files from sdcard to flash storage"
 		cp -rv /sdcard/config/* /config
 	fi
+
+	echo "Copying files from flash storage to ram"
 
 	# Overlay the config flash with the rootfs in memory
 	cp -rv /config/overlay/* /

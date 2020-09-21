@@ -47,6 +47,19 @@ Keep in mind space is a concern and the rootfs and kernel can only be a certain 
 
 
 
+## Web Frontend
+
+cd `/src/web/openmiko`
+`npm install`
+
+### Source the development environment variables
+`. .env.development `
+
+Start the web server (default port 5003)
+`npm run serve`
+
+
+
 ## Bootloader
 
 

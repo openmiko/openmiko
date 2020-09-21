@@ -61,7 +61,8 @@ After about 30 seconds you should get a flashing yellow LED which indicates the 
 
 ## Usage
 
-OpenMiko is actively developed and releases are only provided when the OpenMiko distribution is stable. If you want to test the development version you can easily compile it using [docker](https://www.docker.com/). More details on how to do it [here](doc/docker.md).
+OpenMiko is actively developed and releases are only provided when the OpenMiko distribution is stable.
+Developers who are interested in compiling it from scratch should refer to the [development](doc/development.md) documentation.
 
 
 ## Settings

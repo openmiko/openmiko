@@ -3,13 +3,12 @@ version: "3"
 services:
   builder:
     image: openmiko/openmiko:latest
-    environment:
-      EXAMPLE: development
     volumes:
       - ".:/src"
-      - "/home/tachang/workspace/ingenic_videocap:/ingenic_videocap"
+      - "./local.mk:/openmiko/build/buildroot-2016.02/local.mk"
     ports:
       - "5003:5003"
+      - "5004:5004"
       # - "69:69/udp"
     cap_add:
       - ALL

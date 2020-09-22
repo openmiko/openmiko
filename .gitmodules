@@ -1,3 +1,6 @@
 [submodule "buildroot_output"]
 	path = buildroot_output
 	url = git@github.com:openmiko/buildroot_output.git
+[submodule "submodules/ingenic_videocap"]
+	path = submodules/ingenic_videocap
+	url = git@github.com:/openmiko/ingenic_videocap.git

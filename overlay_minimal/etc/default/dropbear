@@ -1,15 +1,2 @@
-# the TCP port that Dropbear listens on
-DROPBEAR_PORT=22
-
-# any additional arguments for Dropbear
-DROPBEAR_EXTRA_ARGS=
-
-# specify an optional banner file containing a message to be
-# sent to clients before they connect, such as "/etc/issue.net"
-DROPBEAR_BANNER=""
-
-# RSA hostkey file (default: /etc/dropbear/dropbear_rsa_host_key)
-DROPBEAR_RSAKEY="/config/overlay/etc/dropbear/dropbear_rsa_host_key"
-
-# DSS hostkey file (default: /etc/dropbear/dropbear_dss_host_key)
-DROPBEAR_DSSKEY="/config/overlay/etc/dropbear/dropbear_dss_host_key"
+DROPBEAR_DSSKEY="/config/overlay/etc/dropbear/dropbear_ecdsa_host_key"
+DROPBEAR_ARGS="-d $DROPBEAR_DSSKEY"

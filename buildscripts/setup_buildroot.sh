@@ -45,5 +45,7 @@ make ingenic_t20_defconfig
 make savedefconfig BR2_DEFCONFIG=/src/config/ingenic_t20_defconfig
 # make linux-update-defconfig
 
-# Start the build
+# Make the initramfs root first so that the kernel image will have it
+make rootfs-initramfs
+
 make

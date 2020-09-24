@@ -216,7 +216,7 @@ CONFIG_DEBUG_ATOMIC_SLEEP=y
 CONFIG_RCU_CPU_STALL_TIMEOUT=60
 # CONFIG_FTRACE is not set
 CONFIG_CMDLINE_BOOL=y
-CONFIG_CMDLINE="console=ttyS1,115200n8 mem=96M@0x0 ispmem=8M@0x6000000 rmem=24M@0x6800000 init=/linuxrc rootfstype=squashfs root=/dev/mtdblock2 rw mtdparts=jz_sfc:256k(boot),2048k(kernel),13504k(root),256k(config),256k(para),-(flag)"
+CONFIG_CMDLINE="console=tty0 console=ttyS1,115200n8 mem=96M@0x0 ispmem=8M@0x6000000 rmem=24M@0x6800000 init=/linuxrc rootfstype=squashfs root=/dev/mtdblock2 rw mtdparts=jz_sfc:256k(boot),2048k(kernel),13504k(root),256k(config),256k(para),-(flag)"
 CONFIG_CMDLINE_OVERRIDE=y
 CONFIG_DEBUG_STACKOVERFLOW=y
 CONFIG_CRYPTO_ECB=y

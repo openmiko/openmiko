@@ -49,9 +49,11 @@ make savedefconfig BR2_DEFCONFIG=/src/config/ingenic_t20_defconfig
 # Create the cpio root filesystem that is embedded in the kernel
 # This is a minimal root filesystem to bootstrap the bigger rootfs
 cd /src/initramfs_root
+mkdir -p /src/release
+ls -al /src/release
 find . | cpio -H newc -o > /src/release/initramfs.cpio
 
 # Start the build process
 cd /openmiko/build/buildroot-2016.02
-make
+#make
 

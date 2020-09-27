@@ -21,6 +21,8 @@ patch -p1 < /src/patches/add_fp_no_fused_madd.patch
 # Video for Linux package needs -lpthread (only needed if I compile it)
 patch -p1 < /src/patches/libv4l_add_lpthread.patch
 
+# Add LINUX_PRE_BUILD_HOOKS to create embedded initramfs file
+patch -p1 < /src/patches/linux_makefile.patch
 
 # Replace the default buildroot config files with our custom ones
 # The linux configuration is set inside the ingenic_t20_defconfig
@@ -44,13 +46,6 @@ make ingenic_t20_defconfig
 # Technically should be a no-op
 make savedefconfig BR2_DEFCONFIG=/src/config/ingenic_t20_defconfig
 # make linux-update-defconfig
-
-
-# Create the cpio root filesystem that is embedded in the kernel
-# This is a minimal root filesystem to bootstrap the bigger rootfs
-cd /src/initramfs_root
-mkdir -p /src/release
-find . | cpio -H newc -o > /src/release/initramfs.cpio
 
 # Start the build process
 cd /openmiko/build/buildroot-2016.02

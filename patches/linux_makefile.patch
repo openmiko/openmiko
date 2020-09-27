@@ -1,0 +1,14 @@
+--- a/linux/linux.mk	2020-09-27 18:49:27.098885846 +0000
++++ b/linux/linux.mk	2020-09-27 18:49:19.318602900 +0000
+@@ -8,6 +8,11 @@
+ LINUX_LICENSE = GPLv2
+ LINUX_LICENSE_FILES = COPYING
+ 
++define OPENMIKO_LINUX_PRE_BUILD_HOOKS
++	/src/buildscripts/linux_prebuild_hook.sh
++endef
++LINUX_PRE_BUILD_HOOKS += OPENMIKO_LINUX_PRE_BUILD_HOOKS
++
+ # Compute LINUX_SOURCE and LINUX_SITE from the configuration
+ ifeq ($(BR2_LINUX_KERNEL_CUSTOM_TARBALL),y)
+ LINUX_TARBALL = $(call qstrip,$(BR2_LINUX_KERNEL_CUSTOM_TARBALL_LOCATION))

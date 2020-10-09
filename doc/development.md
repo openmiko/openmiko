@@ -45,6 +45,18 @@ Buildroot has a number of packages out of the box. Run `make menuconfig` and use
 
 Keep in mind space is a concern and the rootfs and kernel can only be a certain size. This is due to the stock bootloader setup to only flash a portion of the 16MB flash chip. This could be changed but would require changing the stock bootloader and flashing a custom one which is not necessarily the best for the end user (who may want to go back to the original firmware).
 
+### Custom Code such as Video Capture Tool / Autonight
+
+Custom code is pulled into the project via git submodules.
+
+After pulling down the submodules with `submodule update --init --recursive` you should run `make ingenic_videocap-rebuild`.
+
+
+The normal operation of Buildroot is to download a tarball, extract it, configure, compile and install the software component found inside this tarball. It pulls this from the package mk file. However when you are developing you want to use the local code in `/src`. There is a file called `local.mk` that is used to override it.
+
+You can refer to the buildroot documentation at https://buildroot.org/downloads/manual/manual.html
+The section `8.13.6. Using Buildroot during development` addresses that.
+
 
 
 ## Web Frontend

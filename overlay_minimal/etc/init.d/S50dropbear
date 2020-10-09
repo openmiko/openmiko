@@ -6,8 +6,17 @@
 # Allow a few customizations from a config file
 test -r /etc/default/dropbear && . /etc/default/dropbear
 
+ECDSA_KEY="/config/overlay/etc/dropbear/dropbear_ecdsa_host_key"
+
 start() {
-	DROPBEAR_ARGS="$DROPBEAR_ARGS -R"
+
+	mkdir -p /config/overlay/etc/dropbear
+
+	if [ ! -f "$ECDSA_KEY" ]; then
+		dropbearkey -t ecdsa -f $ECDSA_KEY
+	fi
+
+	DROPBEAR_ARGS="-r $ECDSA_KEY -R"
 
 	# If /etc/dropbear is a symlink to /var/run/dropbear, and
 	#   - the filesystem is RO (i.e. we can not rm the symlink),

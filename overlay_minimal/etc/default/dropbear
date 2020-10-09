@@ -1,2 +1,0 @@
-DROPBEAR_DSSKEY="/config/overlay/etc/dropbear/dropbear_ecdsa_host_key"
-DROPBEAR_ARGS="-d $DROPBEAR_DSSKEY"

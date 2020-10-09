@@ -22,6 +22,9 @@ via TFTP for faster development.
 
 This firmware is a drop in replacement for the stock firmware. Care has been taken to ensure the firmware is compatible with the current flashing methods available. This means there is no need to rewrite the bootloader and that future firmware releases from the original manufacturer should continue to work.
 
+For help join our Slack Channel:
+
+https://join.slack.com/t/openmiko/shared_invite/zt-i152o0c6-~s0PX7c_rp7fJWupykrzNg
 
 
 ## Overview
@@ -71,17 +74,16 @@ These apply to the stream settings inside the JSON configuration file.
 
 ### profile
 
+```
 0 - profile Constrained Baseline
 1 - profile Main
 2 - profile High
-
-
-
+```
 
 
 ## Issues and support
 
-If you encounter an issue which you think is a bug in the OpenMiko or the associated libraries, you are welcome to submit it here on Github: https://github.com/opsenmiko/openmiko/issues.
+If you encounter an issue which you think is a bug in the OpenMiko or the associated libraries, you are welcome to submit it here on Github: https://github.com/openmiko/openmiko/issues.
 
 Please provide as much context as possible:
 
@@ -97,10 +99,3 @@ Please provide as much context as possible:
 ## Contributing
 
 Pull requests are welcome. For fixes of code and documentation, please go ahead and submit a pull request.
-
-## License and Credits
-
-This project is fork of https://github.com/anmaped/openfang/ which was no longer being actively
-maintained.
-
-Buildroot is developed and maintained by The Buildroot developers.

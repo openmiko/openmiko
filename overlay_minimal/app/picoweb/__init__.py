@@ -10,6 +10,7 @@ import ure as re
 import uerrno
 import uasyncio as asyncio
 import pkg_resources
+import signal
 
 from .utils import parse_qs
 
@@ -27,6 +28,7 @@ def get_mime_type(fname):
         return "image"
     return "text/plain"
 
+
 def sendstream(writer, f):
     buf = bytearray(SEND_BUFSZ)
     while True:
@@ -38,10 +40,14 @@ def sendstream(writer, f):
 
 def jsonify(writer, dict):
     import ujson
+
     yield from start_response(writer, "application/json")
     yield from writer.awrite(ujson.dumps(dict))
 
-def start_response(writer, content_type="text/html; charset=utf-8", status="200", headers=None):
+
+def start_response(
+    writer, content_type="text/html; charset=utf-8", status="200", headers=None
+):
     yield from writer.awrite("HTTP/1.0 %s NA\r\n" % status)
     yield from writer.awrite("Content-Type: ")
     yield from writer.awrite(content_type)
@@ -59,13 +65,13 @@ def start_response(writer, content_type="text/html; charset=utf-8", status="200"
             yield from writer.awrite("\r\n")
     yield from writer.awrite("\r\n")
 
+
 def http_error(writer, status):
     yield from start_response(writer, status=status)
     yield from writer.awrite(status)
 
 
 class HTTPRequest:
-
     def __init__(self):
         pass
 
@@ -81,7 +87,6 @@ class HTTPRequest:
 
 
 class WebApp:
-
     def __init__(self, pkg, routes=None, serve_static=True):
         if routes:
             self.url_map = routes
@@ -127,16 +132,18 @@ class WebApp:
             request_line = request_line.decode()
             method, path, proto = request_line.split()
             if self.debug >= 0:
-                self.log.info('%.3f %s %s "%s %s"' % (utime.time(), req, writer, method, path))
+                self.log.info(
+                    '%.3f %s %s "%s %s"' % (utime.time(), req, writer, method, path)
+                )
             path = path.split("?", 1)
             qs = ""
             if len(path) > 1:
                 qs = path[1]
             path = path[0]
 
-            #print("================")
-            #print(req, writer)
-            #print(req, (method, path, qs, proto), req.headers)
+            # print("================")
+            # print(req, writer)
+            # print(req, (method, path, qs, proto), req.headers)
 
             # Find which mounted subapp (if any) should handle this request
             app = self
@@ -144,11 +151,11 @@ class WebApp:
                 found = False
                 for subapp in app.mounts:
                     root = subapp.url
-                    #print(path, "vs", root)
-                    if path[:len(root)] == root:
+                    # print(path, "vs", root)
+                    if path[: len(root)] == root:
                         app = subapp
                         found = True
-                        path = path[len(root):]
+                        path = path[len(root) :]
                         if not path.startswith("/"):
                             path = "/" + path
                         break
@@ -207,7 +214,7 @@ class WebApp:
             else:
                 yield from start_response(writer, status="404")
                 yield from writer.awrite("404\r\n")
-            #print(req, "After response write")
+            # print(req, "After response write")
         except Exception as e:
             if self.debug >= 0:
                 self.log.exc(e, "%.3f %s %s %r" % (utime.time(), req, writer, e))
@@ -246,6 +253,7 @@ class WebApp:
         def _route(f):
             self.url_map.append((url, f, kwargs))
             return f
+
         return _route
 
     def add_url_rule(self, url, func, **kwargs):
@@ -256,18 +264,19 @@ class WebApp:
     def _load_template(self, tmpl_name):
         if self.template_loader is None:
             import utemplate.source
+
             self.template_loader = utemplate.source.Loader(self.pkg, "templates")
         return self.template_loader.load(tmpl_name)
 
     def render_template(self, writer, tmpl_name, args=()):
         tmpl = self._load_template(tmpl_name)
         for s in tmpl(*args):
-            yield from writer.awritestr(s)
+            yield from writer.awrite(s.encode())
 
     def render_str(self, tmpl_name, args=()):
-        #TODO: bloat
+        # TODO: bloat
         tmpl = self._load_template(tmpl_name)
-        return ''.join(tmpl(*args))
+        return "".join(tmpl(*args))
 
     def sendfile(self, writer, fname, content_type=None, headers=None):
         if not content_type:
@@ -306,6 +315,7 @@ class WebApp:
     def run(self, host="127.0.0.1", port=8081, debug=False, lazy_init=False, log=None):
         if log is None and debug >= 0:
             import ulogging
+
             log = ulogging.getLogger("picoweb")
             if debug > 0:
                 log.setLevel(ulogging.DEBUG)

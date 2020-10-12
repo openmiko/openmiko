@@ -1,5 +1,35 @@
 import ure as re
 import picoweb
+import signal
+import ulogging
+import uasyncio as asyncio
+import uerrno
+import machine
+import time
+import utemplate
+
+ulogging.basicConfig(level=ulogging.INFO)
+# ulogging.basicConfig(level=logging.DEBUG)
+
+log = ulogging.getLogger(__name__)
+
+
+def handle_signal(signalNumber):
+    print("Received:", signalNumber)
+    return
+
+
+class OpenMikoWebApp(picoweb.WebApp):
+    def init(self):
+        """Initialize the OpenMiko web application. """
+        log.info("Initializing OpenMiko application")
+        self.setup_signal_handlers()
+        self.inited = True
+
+    def setup_signal_handlers(self):
+        log.info("Setting up signal handlers")
+        SIGUSR1 = 10
+        signal.signal(SIGUSR1, handle_signal)
 
 
 def get_image(req, resp):
@@ -14,48 +44,89 @@ def get_webrtc(req, resp):
     pass
 
 
+def ir_led(req, resp):
+    """
+    Control the infrared led.
+    """
+
+    if req.method in ["POST", "PUT"]:
+        yield from req.read_form_data()
+
+        pin49 = machine.Pin(49, machine.Pin.OUT)
+
+        # For some reason the sleeps are necessary here
+        if req.form["value"] == "1":
+            pin49.value(1)
+        else:
+            pin49.value(0)
+
+    yield from picoweb.start_response(resp)
+
+
+def ir_cut(req, resp):
+    """
+    Control the infrared cut-off filter used to block mid-infrared
+    wavelengths while passing visible light. Normally you want this on.
+    Turning it off results in a purplish hue.
+    """
+
+    if req.method in ["POST", "PUT"]:
+        yield from req.read_form_data()
+        print(req.form)
+
+        pin25 = machine.Pin(25, machine.Pin.OUT)
+        pin26 = machine.Pin(26, machine.Pin.OUT)
+
+        # For some reason the sleeps are necessary here
+        if req.form["value"] == "1":
+            pin25.value(0)
+            pin26.value(1)
+            time.sleep(1)
+            pin26.value(0)
+        else:
+            pin26.value(0)
+            pin25.value(1)
+            time.sleep(1)
+            pin25.value(0)
+
+    yield from picoweb.start_response(resp)
+
+
 def index(req, resp):
-    # You can construct an HTTP response completely yourself, having
-    # a full control of headers sent...
-    yield from resp.awrite("HTTP/1.0 200 OK\r\n")
-    yield from resp.awrite("Content-Type: text/html\r\n")
-    yield from resp.awrite("\r\n")
-    yield from resp.awrite(
-        "I can show you a table of <a href='squares'>squares</a>.<br/>"
-    )
-    yield from resp.awrite("Or my <a href='file'>source</a>.")
+    # Or can use a convenience function start_response() (see its source for
+    # extra params it takes).
+    headers = {"Access-Control-Allow-Origin": "*"}
+
+    yield from picoweb.start_response(resp, headers=headers)
+    yield from app.render_template(resp, "index.html", (req,))
 
 
-def squares(req, resp):
+def cameraimage(req, resp):
     # Or can use a convenience function start_response() (see its source for
     # extra params it takes).
     yield from picoweb.start_response(resp)
-    yield from app.render_template(resp, "squares.tpl", (req,))
+
+    #
+
+    yield from app.render_template(resp, "index.html", (req,))
 
 
-def hello(req, resp):
-    yield from picoweb.start_response(resp)
-    # Here's how you extract matched groups from a regex URI match
-    yield from resp.awrite("Hello " + req.url_match.group(1))
+# def hello(req, resp):
+#     yield from picoweb.start_response(resp)
+#     # Here's how you extract matched groups from a regex URI match
+#     yield from resp.awrite("Hello " + req.url_match.group(1))
 
 
 ROUTES = [
     # You can specify exact URI string matches...
-    ("/api", index),
-    ("/squares", squares),
-    ("/file", lambda req, resp: (yield from app.sendfile(resp, "example_webapp.py"))),
-    # ... or match using a regex, the match result available as req.url_match
-    # for match group extraction in your view.
-    (re.compile("^/iam/(.+)"), hello),
+    ("/", index),
+    ("/api/cameraimage", cameraimage),
+    ("/api/ir_cut", ir_cut),
+    ("/api/ir_led", ir_led),
 ]
 
 
-import ulogging as logging
-
-logging.basicConfig(level=logging.INFO)
-# logging.basicConfig(level=logging.DEBUG)
-
-app = picoweb.WebApp(__name__, ROUTES)
+app = OpenMikoWebApp(__name__, ROUTES)
 # debug values:
 # -1 disable all logging
 # 0 (False) normal logging: requests and errors

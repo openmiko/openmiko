@@ -5,15 +5,36 @@
 
 case "$1" in
   start)
+
+	AUTH_PARAMS=""
+
+	if [[ -f /etc/v4l2rtspserver.conf ]]; then
+		echo "Reading parameters from /etc/v4l2rtspserver.conf"
+		. /etc/v4l2rtspserver.conf
+
+		AUTH_PARAMS="-R $HTTP_AUTH_REALM -U $USERNAME:$PASSWORD"
+	fi
+
 	echo "Adding necessary camera modules"
+
 	modprobe sinfo
 	modprobe tx-isp isp_clk=100000000
-	insmod /driver/sensor_jxf23.ko data_interface=2 pwdn_gpio=-1 reset_gpio=18 sensor_gpio_func=0
 
-	# Turn off the infared filter
-	echo 0 > /sys/class/gpio/gpio25/value
-	echo 1 > /sys/class/gpio/gpio26/value
+	if ! lsmod | grep -wq sensor_jxf23; then
+		insmod /driver/sensor_jxf23.ko data_interface=2 pwdn_gpio=-1 reset_gpio=18 sensor_gpio_func=0
+	fi
 
+	# Turn on the infared cutoff filter (normal light operation)
+	. /usr/bin/libgpio.sh
+
+	gpio_select_gpiochip 0
+	gpio_direction_output 25
+	gpio_direction_output 26
+
+	gpio_set_value 25 0
+	gpio_set_value 26 1
+	sleep 1
+	gpio_set_value 26 0
 
 	# For some reason if I load the v4l2rtspserver with live555 before
 	# loading the ALSA loopback module userspace can't seem to see
@@ -26,7 +47,10 @@ case "$1" in
 	#ffmpeg -fflags +genpts -re -nostats -nostdin -f oss -i /dev/dsp -codec:a copy -f alsa hw:0,0 > /dev/null &
 
 	modprobe v4l2loopback devices=2
-	/usr/bin/videocapture /etc/videocapture_settings.json > /dev/null 2>&1 &
+
+	if ! ps | grep -wq [v]ideocapture; then
+		echo "Starting video frame capture process"
+		/usr/bin/videocapture /etc/videocapture_settings.json > /dev/null 2>&1 &
 
         # Wait for the videocapture program to initialize the v4l2 device
         MAX_WAIT=5
@@ -42,15 +66,20 @@ case "$1" in
                         break
                 fi
         done
-
+	fi
 
 	# This command includes the ALSA hardware but we are disabling for now
 	#/usr/bin/v4l2rtspserver /dev/video3,hw:0,1 > /var/log/v4l2rtspserver.log &
 
-	/usr/bin/v4l2rtspserver /dev/video3 /dev/video4 > /var/log/v4l2rtspserver.log &
+	if ! ps | grep -wq [v]4l2rtspserver; then
+		echo "Starting v4l2rtspserver"
+		/usr/bin/v4l2rtspserver $AUTH_PARAMS -l 1 -A 48000 -C 1 -a S16_LE /dev/video3,hw:0,1 /dev/video4 > /dev/null &
+	fi
 
 	;;
   stop)
+	killall videocapture
+	killall v4l2rtspserver
 	;;
   restart|reload)
 	;;

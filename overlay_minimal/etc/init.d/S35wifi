@@ -8,6 +8,7 @@ case "$1" in
 
 	echo "Starting wifi..."
 
+
 	modprobe 8189fs
 
 	CONFIGPATH="/etc"
@@ -19,7 +20,9 @@ case "$1" in
 
 	wpa_supplicant -Dnl80211 -i wlan0 -c "$CONFIGPATH/wpa_supplicant.conf" -B
 
-	udhcpc -i wlan0 -b -A 20
+	HOSTNAME=`cat /etc/hostname`
+
+	udhcpc -i wlan0 -b -A 20 -x hostname:$HOSTNAME
 
 	;;
   stop)

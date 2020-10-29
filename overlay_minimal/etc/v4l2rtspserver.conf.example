@@ -1,0 +1,8 @@
+# Example configuration for v4l2rtspserver to enable authentication for RTSP stream
+# password should be an md5 hash of username:realm:password all concatenanted together
+#HTTP_AUTH_REALM=default
+#USERNAME=openmiko
+#PASSWORD=
+
+
+

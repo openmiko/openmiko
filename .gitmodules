@@ -4,3 +4,9 @@
 [submodule "submodules/ingenic_videocap"]
 	path = submodules/ingenic_videocap
 	url = git@github.com:/openmiko/ingenic_videocap.git
+	ignore = dirty
+[submodule "submodules/v4l2rtspserver"]
+	path = submodules/v4l2rtspserver
+	url = git@github.com:tachang/v4l2rtspserver.git
+	ignore = dirty
+

@@ -7,5 +7,5 @@
 	ignore = dirty
 [submodule "submodules/v4l2rtspserver"]
 	path = submodules/v4l2rtspserver
-	url = git@github.com:tachang/v4l2rtspserver.git
+	url = git@github.com:openmiko/v4l2rtspserver.git
 	ignore = dirty

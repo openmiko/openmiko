@@ -1,9 +1,12 @@
---- a/Makefile
-+++ b/Makefile
-@@ -0,0 +1,57 @@
+--- a/Makefile	1970-01-01 00:00:00.000000000 +0000
++++ b/Makefile	2020-11-01 01:39:10.876741771 +0000
+@@ -0,0 +1,64 @@
 +ifneq ($(SRC),)
 +VPATH=$(SRC)
 +endif
++
++# $(foreach v, $(.VARIABLES), $(info $(v) = $($(v))))
++
 +
 +ALL_PROGS = v4l2rtspserver
 +PREFIX?=/usr
@@ -13,7 +16,7 @@
 +CXXFLAGS += -I$(SRC) -W -Wall -std=c++11 -g -O3 -D_POSIX_C_SOURCE=2
 +CXXFLAGS += -Iinc -I$(PREFIX)/include -I$(PREFIX)/include/BasicUsageEnvironment -I$(PREFIX)/include/UsageEnvironment -I$(PREFIX)/include/liveMedia -I$(PREFIX)/include/groupsock
 +CXXFLAGS += $(EXTRA_CXXFLAGS)
-+LDFLAGS += -pthread -L$(PREFIX)/lib -lBasicUsageEnvironment -lUsageEnvironment -lliveMedia -lgroupsock -lv4l2wrapper
++LDFLAGS += -pthread -L$(PREFIX)/lib -lBasicUsageEnvironment -lUsageEnvironment -lliveMedia -lgroupsock -lv4l2wrapper -lmp3lame
 +RM = rm -rf
 +
 +RTSPSERVER_OBJS = \
@@ -32,10 +35,14 @@
 +# v4l2wrapper
 +CXXFLAGS += -I$(PREFIX)/include/libv4l2cpp
 +
++# lame
++CXXFLAGS += -I$(PREFIX)/include/lame
++
 +# ALSA
 +ifneq ($(HAVE_ALSA),)
 +CXXFLAGS += -DHAVE_ALSA
 +RTSPSERVER_OBJS += src/ALSACapture.o
++RTSPSERVER_OBJS += src/MP3ALSACapture.o
 +LDFLAGS += -lasound
 +endif
 +

@@ -4,8 +4,8 @@
 #
 #############################################################
 
-V4L2RTSPSERVER_VERSION = 16c21de97eee9f59948807251831ccaf88ba5526
-V4L2RTSPSERVER_SITE = https://github.com/mpromonet/v4l2rtspserver.git
+V4L2RTSPSERVER_VERSION = 3e43985d69fd7c28cfbc83b332d240239c8e5a94
+V4L2RTSPSERVER_SITE = https://github.com/openmiko/v4l2rtspserver.git
 V4L2RTSPSERVER_SITE_METHOD = git
 V4L2RTSPSERVER_LICENSE = UNLICENSE
 V4L2RTSPSERVER_LICENSE_FILES = LICENSE

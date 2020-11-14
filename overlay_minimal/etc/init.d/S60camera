@@ -73,7 +73,8 @@ case "$1" in
 
 	if ! ps | grep -wq [v]4l2rtspserver; then
 		echo "Starting v4l2rtspserver"
-		/usr/bin/v4l2rtspserver $AUTH_PARAMS -l 1 -A 48000 -C 1 -a S16_LE /dev/video3,hw:0,1 /dev/video4 > /dev/null &
+		#/usr/bin/v4l2rtspserver $AUTH_PARAMS -l 1 -A 48000 -C 1 -a S16_LE /dev/video3,hw:0,1 /dev/video4 > /dev/null &
+		/usr/bin/v4l2rtspserver $AUTH_PARAMS -l 1 -A 48000 -C 1 -a S16_LE /dev/video3 /dev/video4 > /dev/null &
 	fi
 
 	;;

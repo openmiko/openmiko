@@ -116,6 +116,14 @@ find . -name ".stamp_target_installed*" -print | xargs rm -f
 ```
 
 
+### Fitting things into the root filesystem
+
+There is a utility called print_compression.py that goes through the output/target directory and tries to xz each file up individually and get the compressed value into a CSV.
+
+This utility can give you a better idea of what you can remove.
+
+When attempting to shrink the root file system unselecting items from the buildroot menu doesn't work.
+It will still remain in the output target directory. You have to manually go into the output target and delete each of the files. This is a pain because you sometimes don't know all the random library files and such. But usually you can give a good guess.
 
 
 

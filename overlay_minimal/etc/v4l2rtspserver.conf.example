@@ -3,6 +3,6 @@
 #HTTP_AUTH_REALM=default
 #USERNAME=openmiko
 #PASSWORD=
-
+#ENABLE_RECORDING=1
 
 

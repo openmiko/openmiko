@@ -103,7 +103,7 @@ CONFIG_CMDLINE="console=ttyS1,115200n8 mem=96M@0x0 ispmem=8M@0x6000000 rmem=24M@
 Rebuild skeleton for rootfs and make changes without having to rebuild everything
 
 ```
-
+cd /openmiko/build/buildroot-2016.02/output
 rm -rf target
 mkdir -p target/sbin
 mkdir -p target/lib

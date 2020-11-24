@@ -7,6 +7,8 @@ import uerrno
 import machine
 import time
 import utemplate
+import os
+import gc
 
 ulogging.basicConfig(level=ulogging.INFO)
 # ulogging.basicConfig(level=logging.DEBUG)
@@ -102,13 +104,29 @@ def index(req, resp):
 
 
 def cameraimage(req, resp):
-    # Or can use a convenience function start_response() (see its source for
-    # extra params it takes).
-    yield from picoweb.start_response(resp)
+    yield from picoweb.start_response(
+        resp, content_type="multipart/x-mixed-replace;boundary=--boundarydonotcross"
+    )
 
-    #
+    chunk_size = 1024
 
-    yield from app.render_template(resp, "index.html", (req,))
+    while True:
+        os.system("/usr/bin/getimage")
+        file_length = os.stat("/tmp/out.jpg")[6]
+        f = open("/tmp/out.jpg", "rb")
+
+        yield from resp.awrite("--boundarydonotcross\r\n")
+        yield from resp.awrite("Content-type: image/jpeg\r\n")
+        yield from resp.awrite("Content-length: %s\r\n\r\n" % file_length)
+
+        filedata = f.read(chunk_size)
+        while filedata:
+            yield from resp.awrite(filedata)
+            filedata = f.read(chunk_size)
+        yield from resp.awrite("\r\n")
+
+        yield from resp.awrite("--boundarydonotcross\r\n")
+        time.sleep(1)
 
 
 # def hello(req, resp):

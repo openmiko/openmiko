@@ -74,8 +74,25 @@ case "$1" in
 	if ! ps | grep -wq [v]4l2rtspserver; then
 		echo "Starting v4l2rtspserver"
 		#/usr/bin/v4l2rtspserver $AUTH_PARAMS -l 1 -A 48000 -C 1 -a S16_LE /dev/video3,hw:0,1 /dev/video4 > /dev/null &
-		/usr/bin/v4l2rtspserver $AUTH_PARAMS -l 1 -A 48000 -C 1 -a S16_LE /dev/video3 /dev/video4 > /dev/null &
+		/usr/bin/v4l2rtspserver $AUTH_PARAMS /dev/video3 /dev/video4 > /dev/null &
 	fi
+
+	# Waiting for v4l2rtpserver to start
+	sleep 5
+
+	FFMPEG_CMD="ffmpeg -nostats -nostdin"
+	RTSP_TRANSPORT="-rtsp_transport tcp -i rtsp://$USERNAME:$CLEARTEXT_PASSWORD@127.0.0.1:8554/video3/unicast"
+
+	SEGMENT_ARGS="-f segment -segment_time 600 -segment_format mp4 -segment_wrap 60"
+
+	if [ "$ENABLE_RECORDING" = "1" ]; then
+		echo "Starting recording using ffmpeg"
+		mkdir -p /sdcard/recordings
+		FFMPEG_CMD="$FFMPEG_CMD $RTSP_TRANSPORT -c:v copy $SEGMENT_ARGS -reset_timestamps 1 -strftime 0 -movflags frag_keyframe -c copy -map 0 /sdcard/recordings/segment-%04d.mp4"
+		echo $FFMPEG_CMD
+		$FFMPEG_CMD > /dev/null 2>&1 &
+	fi
+
 
 	;;
   stop)

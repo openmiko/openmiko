@@ -20,7 +20,8 @@ RUN \
   nfs-kernel-server \
   tftpd-hpa \
   curl \
-  python3
+  python3 \
+  python-lzma
 
 
 RUN locale-gen --no-purge en_US.UTF-8

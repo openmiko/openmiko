@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+# Start micropython picoweb API
+#
+
+case "$1" in
+  start)
+ 	echo -n "Starting micropython based API: "
+	/usr/bin/micropython /app/app.py > /dev/null 2>&1 &
+
+	[ $? == 0 ] && echo "OK" || echo "FAIL"
+	;;
+  stop)
+	echo -n "Stopping micropython: "
+	killall micropython
+	[ $? == 0 ] && echo "OK" || echo "FAIL"
+	;;
+  restart|reload)
+	"$0" stop
+	"$0" start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

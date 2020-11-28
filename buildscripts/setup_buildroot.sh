@@ -11,6 +11,12 @@ cd /openmiko/build/buildroot-2016.02
 # ffmpeg doesn't seem to build out of the box so use our own
 rm -rf /openmiko/build/buildroot-2016.02/package/ffmpeg
 
+
+# Use our own mjpg-streamer package
+rm -rf /openmiko/build/buildroot-2016.02/package/mjpg-streamer
+
+
+
 #cp -r /src/custompackages/package/ffmpeg /openmiko/build/buildroot-2016.02/package/
 cp -r /src/custompackages/package/* /openmiko/build/buildroot-2016.02/package/
 

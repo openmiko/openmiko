@@ -15,13 +15,21 @@ case "$1" in
 		AUTH_PARAMS="-R $HTTP_AUTH_REALM -U $USERNAME:$PASSWORD"
 	fi
 
+
+	## Determine the image sensor model
 	echo "Adding necessary camera modules"
 
 	modprobe sinfo
+	echo 1 >/proc/jz/sinfo/info
+	sensor=$(grep -m1 -oE 'jxf[0-9]*$' /proc/jz/sinfo/info)	
+	echo "Determined image sensor model as $sensor"
+
 	modprobe tx-isp isp_clk=100000000
 
-	if ! lsmod | grep -wq sensor_jxf23; then
-		insmod /driver/sensor_jxf23.ko data_interface=2 pwdn_gpio=-1 reset_gpio=18 sensor_gpio_func=0
+	if [ $sensor = 'jxf23' ]; then
+	  insmod /driver/sensor_jxf23.ko data_interface=2 pwdn_gpio=-1 reset_gpio=18 sensor_gpio_func=0
+	else
+	  insmod /driver/sensor_jxf22.ko data_interface=2 pwdn_gpio=-1 reset_gpio=18 sensor_gpio_func=0
 	fi
 
 	# Turn on the infared cutoff filter (normal light operation)
@@ -46,7 +54,7 @@ case "$1" in
 	sleep 1
 	#ffmpeg -fflags +genpts -re -nostats -nostdin -f oss -i /dev/dsp -codec:a copy -f alsa hw:0,0 > /dev/null &
 
-	modprobe v4l2loopback devices=2
+	modprobe v4l2loopback devices=4
 
 	if ! ps | grep -wq [v]ideocapture; then
 		echo "Starting video frame capture process"

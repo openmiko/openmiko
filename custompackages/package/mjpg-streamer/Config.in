@@ -1,0 +1,4 @@
+config BR2_PACKAGE_MJPG_STREAMER
+	bool "mjpg_streamer"
+	help
+	  mjpg_streamer

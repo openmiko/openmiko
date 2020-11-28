@@ -9,3 +9,6 @@
 	path = submodules/v4l2rtspserver
 	url = git@github.com:openmiko/v4l2rtspserver.git
 	ignore = dirty
+[submodule "mjpg-streamer"]
+	path = submodules/mjpg-streamer
+	url = git@github.com:openmiko/mjpg-streamer.git

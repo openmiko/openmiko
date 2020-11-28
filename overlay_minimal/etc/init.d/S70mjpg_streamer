@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+# Start mjpg-streamer
+#
+
+case "$1" in
+  start)
+ 	echo -n "Starting mjpg_streamer: "
+	mjpg_streamer -i "input_v4l2loopback.so -d /dev/video4 --fps 5" -o "output_http.so" > /dev/null 2>&1 &
+	[ $? == 0 ] && echo "OK" || echo "FAIL"
+	;;
+  stop)
+	echo -n "Stopping mjpg_streamer: "
+	killall mjpg_streamer
+	[ $? == 0 ] && echo "OK" || echo "FAIL"
+	;;
+  restart|reload)
+	"$0" stop
+	"$0" start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

@@ -33,19 +33,20 @@ jobs:
       - name: Push the latest Docker image
         run: docker push openmiko/openmiko:latest
 
+      - name: Copy the openmiko_firmware.bin out of container
+        run: docker run --rm --entrypoint cat openmiko/openmiko:${{steps.vars.outputs.tag}} /src/release/openmiko_firmware.bin > /tmp/openmiko_firmware.bin
 
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            This is an automated release based on commit ${{steps.vars.outputs.tag}}
+          draft: false
+          prerelease: true
+          artifacts: ["/tmp/openmiko_firmware.bin"]
 
-      # - name: Create Release
-      #   id: create_release
-      #   uses: actions/create-release@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-      #   with:
-      #     tag_name: ${{ github.ref }}
-      #     release_name: Release ${{ github.ref }}
-      #     body: |
-      #       Changes in this Release
-      #       - First Change
-      #       - Second Change
-      #     draft: false
-      #     prerelease: false

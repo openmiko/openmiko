@@ -48,5 +48,6 @@ jobs:
             This is an automated release based on commit ${{steps.vars.outputs.tag}}
           draft: false
           prerelease: true
-          artifacts: ["/tmp/openmiko_firmware.bin"]
+          artifacts:
+            - "/tmp/openmiko_firmware.bin"
 

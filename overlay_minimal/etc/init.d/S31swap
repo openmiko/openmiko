@@ -1,0 +1,53 @@
+#!/bin/bash
+#
+# Swaps on the sdcard if available
+#
+
+
+SWAPFILE=/sdcard/swapfile
+. /etc/openmiko.conf
+
+case "$1" in
+  start)
+
+	if [[ "$ENABLE_SWAP" -ne "1" ]]; then
+		echo "ENABLE_SWAP is 0. Not starting swap."
+		exit 0
+	fi
+
+
+ 	echo "Starting swap on sdcard using $SWAPFILE"
+
+	# Check if sdcard is mounted
+	mountpoint -q /sdcard
+	if [[ "$?"  -ne 0 ]]; then
+		echo "/sdcard is not mounted or swap already running"
+		exit 0
+	fi
+
+	# TODO: Check if the sdcard has space
+
+	# Check if swap is enabled
+	if [[ ! -f "/sdcard/swapfile" ]]; then
+		echo "Creating $SWAPFILE"
+		dd if=/dev/zero of=$SWAPFILE bs=4K count=16K
+	fi
+
+	mkswap $SWAPFILE
+	swapon $SWAPFILE
+	;;
+  stop)
+	swapoff $SWAPFILE
+	;;
+  restart|reload)
+	"$0" stop
+	"$0" start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?
+
+

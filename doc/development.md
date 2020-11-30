@@ -141,9 +141,24 @@ Then remake the initramfs filesystem:
 make rootfs-initramfs
 ```
 
+### Custom buildroot packages
+
+There are a number of custom buildroot packages defined in the directory `custompackages`.
+
+These package definitions are copied into the buildroot package directory using the command
+
+`cp -r /src/custompackages/package/* /openmiko/build/buildroot-2016.02/package/`
+
+This command is run in the `setup_buildroot.sh` buildscript.
+
+The custom packages are necessary because the buildroot we are using is fairly old and sometimes we want to have a newer package than what is included in that old version. Some of the other packages are truly custom (such as ingenic_videocap). Others are just updated with a newer source code commit.
+
+When upgrading packages such as ingenic_videocap you will want to first test the code out locally using the buildroot `local.mk` file. If you are happy with the result you can push the code up and copy the commit to the custompackages `.mk` file. This results in pinning the version you want to use.
 
 
-H264
+### Other Notes
+
+#### H264
 
 https://stackoverflow.com/questions/24884827/possible-locations-for-sequence-picture-parameter-sets-for-h-264-stream/24890903#24890903
 

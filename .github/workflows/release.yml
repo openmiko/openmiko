@@ -8,7 +8,7 @@ name: Create Release
 
 jobs:
   build:
-    name: Create Release
+    name: Create docker container
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -32,6 +32,13 @@ jobs:
 
       - name: Push the latest Docker image
         run: docker push openmiko/openmiko:latest
+  release:
+    name: Create a release
+    needs: build
+    steps:
+      - name: Get the version
+        id: vars
+        run: echo ::set-output name=tag::$(echo ${GITHUB_REF:10})
 
       - name: Copy the openmiko_firmware.bin out of container
         run: docker run --rm --entrypoint cat openmiko/openmiko:${{steps.vars.outputs.tag}} /src/release/openmiko_firmware.bin > /tmp/openmiko_firmware.bin
@@ -59,6 +66,3 @@ jobs:
           asset_path: /tmp/openmiko_firmware.bin
           asset_name: openmiko_firmware.bin
           asset_content_type: application/octet-stream
-
-
-

@@ -1,6 +1,18 @@
 # OpenMiko
 
-OpenMiko is a bootloader, kernel and toolchain for devices using Ingenic T10 and T20 SOC.
+OpenMiko is custom opensource firmware for cameras that use the Ingenic T20 chip.
+These cameras include the Wyzecam V2 and Xiaomi Xiaofang.
+
+The firmware aims to provide an an alternative to the closed source out of box firmwares.
+
+## Features
+
+- No app to download
+- Support for common protocols such as RTSP and MJPEG
+- SSH server
+- ffmpeg
+- mjpg-streamer
+- Easily add or compile your own applications
 
 ## Differences between this project and DaFang Hacks / OpenFang
 

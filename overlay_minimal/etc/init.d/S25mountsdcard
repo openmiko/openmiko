@@ -16,6 +16,13 @@ case "$1" in
 		mount /dev/mmcblk0p1 /sdcard
 		sleep 1
 		echo "Mount /sdcard successful"
+
+		# Write log files to the sdcard
+		mkdir -p /sdcard/var/log
+		cp -r /var/log/* /sdcard/var/log
+		rm /var/log
+		mkdir -p /var/log
+		mount /sdcard/var/log /var/log
 	fi;
 
 	;;

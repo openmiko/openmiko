@@ -3,8 +3,16 @@
 # Start micropython picoweb API
 #
 
+if [[ -f /etc/openmiko.conf ]]; then
+	. /etc/openmiko.conf
+fi
+
 case "$1" in
   start)
+	if [ "$ENABLE_API" != "1" ]; then
+		exit 0
+	fi
+
  	echo -n "Starting micropython based API: "
 	/usr/bin/micropython /app/app.py > /dev/null 2>&1 &
 

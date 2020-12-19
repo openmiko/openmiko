@@ -1,0 +1,7 @@
+COLLECTIONS_C_VERSION = fdcea75cc24112a7cb162bec845141ba3991aea3
+COLLECTIONS_C_SITE = https://github.com/srdja/Collections-C.git
+COLLECTIONS_C_SITE_METHOD = git
+COLLECTIONS_C_DEPENDENCIES =
+COLLECTIONS_C_CONF_OPTS =
+
+$(eval $(cmake-package))

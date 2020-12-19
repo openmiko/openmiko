@@ -1641,6 +1641,7 @@ menu "buildroot-packages [external repo]"
 	source "package/v4l2cpp/Config.in"
 	source "package/v4l2loopback/Config.in"
 	source "package/v4l2rtspserver/Config.in"
+	source "package/collections_c/Config.in"
 
 endmenu
 

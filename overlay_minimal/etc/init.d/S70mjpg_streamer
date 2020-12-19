@@ -3,8 +3,17 @@
 # Start mjpg-streamer
 #
 
+if [[ -f /etc/openmiko.conf ]]; then
+	. /etc/openmiko.conf
+fi
+
 case "$1" in
   start)
+
+	if [ "$ENABLE_MJPEG_OVER_HTTP" != "1" ]; then
+		exit 0
+	fi
+
  	echo -n "Starting mjpg_streamer: "
 	mjpg_streamer -i "input_v4l2loopback.so -d /dev/video4 --fps 5" -o "output_http.so" > /dev/null 2>&1 &
 	[ $? == 0 ] && echo "OK" || echo "FAIL"

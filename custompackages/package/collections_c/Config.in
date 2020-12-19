@@ -1,0 +1,4 @@
+config BR2_PACKAGE_COLLECTIONS_C
+	bool "collections_c"
+	help
+	  A library of generic data structures for C programs

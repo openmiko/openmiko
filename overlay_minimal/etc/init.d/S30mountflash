@@ -7,24 +7,18 @@ case "$1" in
   start)
  	echo "Mounting flash partitions"
 
-	if [ -d /config ]
-	then
-		umount /config
-	fi
+	mkdir -p /config
 	mount -t jffs2 /dev/mtdblock3 /config
 
 	if [ $? -ne 0 ]
 	then
-		echo "Erasing /dev/mtd3 due to unclean mount"
-		/usr/sbin/flash_eraseall /dev/mtd3
-		mount -t jffs2 /dev/mtdblock3 /config/
-		touch /config/.initialized
+		logger -s "Error mounting /dev/mtdblock3 on /config"
+		exit 1
 	fi
-
 
 	# Should implement an optimization here to check for each file
 	# so we don't wear out flash chip
-	if [ -d /sdcard/config/ ]
+	if [ -d "/sdcard/config" ]
 	then
 		echo "Copying files from sdcard to flash storage"
 		cp -rv /sdcard/config/* /config

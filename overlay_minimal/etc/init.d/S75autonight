@@ -1,0 +1,34 @@
+#!/bin/sh
+#
+# Start script to turn on and off IR LEDs for nightmode
+#
+
+if [[ -f /etc/openmiko.conf ]]; then
+	. /etc/openmiko.conf
+fi
+
+case "$1" in
+  start)
+
+	if [ "$ENABLE_AUTONIGHT" != "1" ]; then
+		exit 0
+	fi
+	logger -s -t autonight "Starting autonight" 
+	/usr/bin/autonight -v -S -c /usr/bin/nightmode.sh > /var/log/autonight.log 2>&1 &
+	[ $? == 0 ] && echo "OK" || echo "FAIL"
+	;;
+  stop)
+	logger -s -t autonight "Stopping autonight"
+	killall autonight
+	[ $? == 0 ] && echo "OK" || echo "FAIL"
+	;;
+  restart|reload)
+	"$0" stop
+	"$0" start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

@@ -13,7 +13,7 @@ case "$1" in
 	AUTH_PARAMS=""
 
 	if [[ -f /etc/v4l2rtspserver.conf ]]; then
-		echo "Reading parameters from /etc/v4l2rtspserver.conf"
+		logger -s "Reading parameters from /etc/v4l2rtspserver.conf"
 		. /etc/v4l2rtspserver.conf
 
 		AUTH_PARAMS="-R $HTTP_AUTH_REALM -U $USERNAME:$PASSWORD"
@@ -26,11 +26,11 @@ case "$1" in
 	modprobe sinfo
 	echo 1 >/proc/jz/sinfo/info
 	sensor=$(grep -m1 -oE 'jxf[0-9]*$' /proc/jz/sinfo/info)
-	echo "Determined image sensor model as $sensor"
+	logger -s "Determined image sensor model as $sensor"
 
 	modprobe tx-isp isp_clk=100000000
 
-	if [ $sensor = 'jxf23' ]; then
+	if [ "$sensor" = "jxf23" ]; then
 	  insmod /driver/sensor_jxf23.ko data_interface=2 pwdn_gpio=-1 reset_gpio=18 sensor_gpio_func=0
 	else
 	  insmod /driver/sensor_jxf22.ko data_interface=2 pwdn_gpio=-1 reset_gpio=18 sensor_gpio_func=0
@@ -61,7 +61,7 @@ case "$1" in
 	modprobe v4l2loopback devices=4
 
 	if ! ps | grep -wq [v]ideocapture; then
-		echo "Starting video frame capture process"
+		logger -s "Starting video frame capture process"
 		/usr/bin/videocapture /etc/videocapture_settings.json > /dev/null 2>&1 &
 		sleep 10
 
@@ -70,12 +70,12 @@ case "$1" in
         i=0
         while [[ -e $(fuser /dev/video3) ]]
         do
-                echo "Waiting for initialization of v4l2 device"
+                logger -s "Waiting for initialization of v4l2 device"
                 sleep 1
                 i=`expr $i + 1`
                 if [[ $i -gt $MAX_WAIT ]]
                 then
-                        echo "Unable to initialize v4l2 device"
+                        logger -s "Unable to initialize v4l2 device"
                         break
                 fi
         done
@@ -85,7 +85,7 @@ case "$1" in
 	#/usr/bin/v4l2rtspserver /dev/video3,hw:0,1 > /var/log/v4l2rtspserver.log &
 
 	if ! ps | grep -wq [v]4l2rtspserver; then
-		echo "Starting v4l2rtspserver"
+		logger -s "Starting v4l2rtspserver"
 		#/usr/bin/v4l2rtspserver $AUTH_PARAMS -l 1 -A 48000 -C 1 -a S16_LE /dev/video3,hw:0,1 /dev/video4 > /dev/null &
 		/usr/bin/v4l2rtspserver $AUTH_PARAMS /dev/video3 /dev/video5 > /dev/null &
 	fi
@@ -99,7 +99,7 @@ case "$1" in
 	SEGMENT_ARGS="-f segment -segment_time 600 -segment_format mp4 -segment_wrap 60"
 
 	if [ "$ENABLE_RECORDING" = "1" ]; then
-		echo "Starting recording using ffmpeg"
+		logger -s "Starting recording using ffmpeg"
 		mkdir -p /sdcard/recordings
 		FFMPEG_CMD="$FFMPEG_CMD $RTSP_TRANSPORT -c:v copy $SEGMENT_ARGS -reset_timestamps 1 -strftime 0 -movflags frag_keyframe -c copy -map 0 /sdcard/recordings/segment-%04d.mp4"
 		echo $FFMPEG_CMD

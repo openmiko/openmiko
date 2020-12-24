@@ -13,7 +13,7 @@
     "crop_left": 0,
     "crop_width": 0,
     "crop_height": 0,
-    "scaling_enable": 0,
+    "scaling_enable": 1,
     "scaling_width": 1920,
     "scaling_height": 1080,
     "frame_rate_numerator": 25,

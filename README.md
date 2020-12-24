@@ -73,6 +73,21 @@ Hold the setup button, plug in your USB cable, keep holding the setup button for
 
 After about 30 seconds you should get a flashing yellow LED which indicates the camera is working.
 
+The configuration by default provides 3 output streams:
+
+- 1920x1080 H264
+- 1920x1080 JPG over HTTP (MJPEG)
+- 640x360 H264
+
+There are some jagged edges on the 640x360 stream that I haven't been able to figure out yet.
+
+The streams can be accessed using the following URLs:
+
+- rtsp://IP:8554/video3/unicast
+- rtsp://IP:8554/video5/unicast
+- http://IP:8080/?action=stream
+- http://IP:8080/?action=snapshot
+
 
 ## Usage
 
@@ -82,7 +97,9 @@ Developers who are interested in compiling it from scratch should refer to the [
 
 ## Settings
 
-These apply to the stream settings inside the JSON configuration file.
+Settings can be changed by editing /etc/videocapture_settings.json. However the changes will not persist unless you write them to the flash. To ease saving these settings copy the file to `/config/overlay/etc/videocapture_settings.json`. The files in /config are mounted to the flash chip and will survive reboots.
+
+
 
 ### profile
 

@@ -5,7 +5,7 @@
 
 case "$1" in
   start)
- 	echo "Mounting  /sdcard"
+ 	echo "Mounting /sdcard"
 
 	echo 43 > /sys/class/gpio/export
 	echo out > /sys/class/gpio/gpio43/direction

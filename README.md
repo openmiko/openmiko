@@ -100,6 +100,16 @@ Developers who are interested in compiling it from scratch should refer to the [
 Settings can be changed by editing /etc/videocapture_settings.json. However the changes will not persist unless you write them to the flash. To ease saving these settings copy the file to `/config/overlay/etc/videocapture_settings.json`. The files in /config are mounted to the flash chip and will survive reboots.
 
 
+### Writing Config Files
+
+On boot it is possible to put files on the sdcard and have them copied permanently to the configuration storage area of the camera.
+
+You should create a directory called `config` on the sdcard.
+
+Inside this directory create more directories. In particular create `/config/overlay/etc` and any files you want to write to the camera. For example to change the wifi module that is loaded create a file `<SDCARD>/config/overlay/etc/openmiko.conf`.
+
+In `openmiko.conf` copy the default one from https://github.com/openmiko/openmiko/blob/master/overlay_minimal/etc/openmiko.conf and change the line that says `WIFI_MODULE=8189fs` to `WIFI_MODULE=8189es`.
+
 
 ### profile
 

@@ -3,13 +3,14 @@
 # Start the wifi....
 #
 
+. /etc/openmiko.conf
+
 case "$1" in
   start)
 
-	echo "Starting wifi..."
+	logger -s "Starting wifi using module $WIFI_MODULE" 
 
-
-	modprobe 8189fs
+	modprobe $WIFI_MODULE
 
 	CONFIGPATH="/etc"
 

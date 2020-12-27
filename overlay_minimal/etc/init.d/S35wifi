@@ -3,6 +3,9 @@
 # Start the wifi....
 #
 
+# Set default WIFI_MODULE
+WIFI_MODULE=8189fs
+
 . /etc/openmiko.conf
 
 case "$1" in

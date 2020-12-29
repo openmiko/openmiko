@@ -3,8 +3,7 @@
 OpenMiko is custom opensource firmware for cameras that use the Ingenic T20 chip.
 These cameras include the Wyzecam V2 and Xiaomi Xiaofang.
 
-The firmware aims to provide an an alternative to the closed source out of box firmwares which can often be riddled with bugs and security holes. Privacy is also a concern as it is difficult to tell if out of box firmware reachs out to other servers or is broadcasting metadata.
-
+The firmware aims to provide an an alternative to the closed source out of box firmwares which can often be riddled with bugs and security holes. Privacy is also a concern as it is difficult to tell if out of box firmware reaches out to other servers or is broadcasting metadata.
 
 ## Features
 
@@ -14,6 +13,7 @@ The firmware aims to provide an an alternative to the closed source out of box f
 - ffmpeg
 - mjpg-streamer
 - Easily add or compile your own applications
+- Supported by OctoPrint (https://community.octoprint.org/t/wyze-cam-v2-and-octoprint-as-of-28dec2020/27081)
 
 ## Differences between this project and DaFang Hacks / OpenFang
 

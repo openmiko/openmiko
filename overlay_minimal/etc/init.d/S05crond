@@ -1,0 +1,34 @@
+#!/bin/sh
+#
+# Start crond
+#
+
+start() {
+	printf "Starting crond: "
+	start-stop-daemon -b -S -q -m -p /var/run/crond.pid --exec /usr/sbin/crond -- -l 4
+	echo "OK"
+}
+
+stop() {
+	printf "Stopping crond: "
+	start-stop-daemon -K -q -p /var/run/crond.pid
+	echo "OK"
+}
+
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  restart|reload)
+	stop
+	start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

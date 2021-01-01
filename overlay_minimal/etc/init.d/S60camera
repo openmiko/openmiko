@@ -62,7 +62,7 @@ case "$1" in
 
 	if ! ps | grep -wq [v]ideocapture; then
 		logger -s "Starting video frame capture process"
-		/usr/bin/videocapture /etc/videocapture_settings.json > /dev/null 2>&1 &
+		/usr/bin/videocapture /etc/videocapture_settings.json > /var/log/videocapture.log 2>&1 &
 		sleep 10
 
         # Wait for the videocapture program to initialize the v4l2 device

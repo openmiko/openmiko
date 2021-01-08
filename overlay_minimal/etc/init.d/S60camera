@@ -94,7 +94,7 @@ case "$1" in
 	sleep 5
 
 	FFMPEG_CMD="ffmpeg -nostats -nostdin"
-	RTSP_TRANSPORT="-rtsp_transport tcp -i rtsp://$USERNAME:$CLEARTEXT_PASSWORD@127.0.0.1:8554/unicast"
+	RTSP_TRANSPORT="-rtsp_transport tcp -i rtsp://$USERNAME:$CLEARTEXT_PASSWORD@127.0.0.1:8554/video5/unicast"
 
 	SEGMENT_ARGS="-f segment -segment_time 600 -segment_format mp4 -segment_wrap 60"
 

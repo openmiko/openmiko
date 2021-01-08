@@ -22,7 +22,7 @@ mkdir -p /newroot
 # Setup zram root file system. Use 4K blocks because zram
 # does not include any option to control block size. It is hard-coded.
 
-echo 50M > /sys/block/zram0/disksize
+echo 40M > /sys/block/zram0/disksize
 busybox mke2fs /dev/zram0 -b 4096
 mount /dev/zram0 /newroot
 

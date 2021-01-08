@@ -138,8 +138,12 @@ After the binary is built copy it to `initramfs_root/bin`
 Then remake the initramfs filesystem:
 
 ```
+/src/buildscripts/linux_prebuild_hook.sh
 make rootfs-initramfs
+make linux-rebuild
+make
 ```
+
 
 ### Custom buildroot packages
 

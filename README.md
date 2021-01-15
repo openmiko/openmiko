@@ -119,6 +119,11 @@ In `openmiko.conf` copy the default one from https://github.com/openmiko/openmik
 2 - profile High
 ```
 
+### Resetting the configuration
+
+While the camera is started hold down reset button for at least 6 seconds.
+After 6 seconds the blue LED should turn on and pulse 3 heartbeats. The `/config` partition (which is mounted to the persistent flash memory itself) will be removed.
+
 
 ## Issues and support
 

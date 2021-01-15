@@ -1,0 +1,31 @@
+#!/bin/sh
+#
+# Start script that monitors the reset button
+# If it held down for longer than 6 seconds it will wipe /config
+#
+
+if [[ -f /etc/openmiko.conf ]]; then
+	. /etc/openmiko.conf
+fi
+
+case "$1" in
+  start)
+	logger -s -t reset_monitor "Starting reset button monitor"
+	/usr/bin/reset_button.sh > /dev/null 2>&1 &
+	[ $? == 0 ] && echo "OK" || echo "FAIL"
+	;;
+  stop)
+	logger -s -t reset_monitor "Stopping reset button monitor"
+	killall reset_button.sh
+	[ $? == 0 ] && echo "OK" || echo "FAIL"
+	;;
+  restart|reload)
+	"$0" stop
+	"$0" start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

@@ -68,8 +68,10 @@ Download the specific version of the firmware you wish to install. The releases 
 
 [![Releases](doc/img/releases.png)](https://github.com/openmiko/openmiko/releases)
 
-
 Rename the firmware to `demo.bin` and put it in on the root of the microSD card.
+
+[![Assets](doc/img/assets.png)](https://github.com/openmiko/openmiko/releases)
+
 
 Power off the camera and insert the microSD card.
 

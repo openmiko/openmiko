@@ -64,7 +64,11 @@ If you have a classic XiaoFang with a ARM-Processor, consider using https://gith
 
 Before installing OpenMiko, we suggest you carefully read the [FAQ](/doc/faq.md).
 
-Download the specific version of the firmware you wish to install.
+Download the specific version of the firmware you wish to install. The releases can be found on the right hand side in Github under the label "Releases".
+
+[![Releases](doc/img/releases.png)](https://github.com/openmiko/openmiko/releases)
+
+
 Rename the firmware to `demo.bin` and put it in on the root of the microSD card.
 
 Power off the camera and insert the microSD card.

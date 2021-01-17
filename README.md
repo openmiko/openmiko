@@ -43,14 +43,6 @@ https://join.slack.com/t/openmiko/shared_invite/zt-kk5r7ws1-CfusFmux1T17~qu5xtJr
 
 At the present time, this repository only contains kernel and rootfs for cameras using Inegnic T20 SOC. To ease identifying these cameras please use the pictures below. A more detailed technical description can be found [here](doc/overview.md).
 
-Ingenic T20L (64Mb DDR) | &nbsp;
-:-- | --:
-![Xiaomi Mijia](doc/SXJ02ZM/img/xiaomi_mijia_2018.jpg) Xiaomi Mijia 2018 | ![Xiaomi Xiaofang 1S](doc/xiaomi_xiaofang1s/img/xiaofang1s.jpg) Xiaomi Xiaofang 1S
-
-Ingenic T20N (64Mb DDR + SIMD128)
-:-- |
-![DIGOO DG W30](doc/dg-w30/img/dg-w30.jpg) DIGOO DG W30
-
 Ingenic T20X (128Mb DDR) | &nbsp;
 :-- | --:
 ![Wyze Cam v2](doc/wyzecam_v2/img/wyzecam_v2.jpg) Wyze Cam V2 | 

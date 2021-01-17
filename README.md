@@ -79,6 +79,25 @@ Hold the setup button, plug in your USB cable, keep holding the setup button for
 
 After about 30 seconds you should get a flashing yellow LED which indicates the camera is working.
 
+
+## Setting up the wifi
+
+Wifi configuration is done via the sdcard.
+
+On the sdcard create the directories `/config/overlay/etc`:
+
+![Overlay Filesystem](doc/img/overlay_filesystem.png)
+
+In the `etc` directory copy the file [`wpa_supplicant.conf`](https://github.com/openmiko/openmiko/blob/master/overlay_minimal/etc/wpa_supplicant.conf). Edit this file and plug in your wifi name and password.
+
+Insert the sdcard into the camera and reboot. OpenMiko will copy this directory over to the `/config` partition (which is persistent flash storage). This method can also be used to overwrite other files. For example:
+
+
+- `/etc/passwd` and `/etc/shadow` can be overwritten to make sure password changes are persistent
+- `/config/overlay/etc/dropbear/dropbear_ecdsa_host_key` can be used to have a persistent SSH signature
+
+## Usage
+
 The configuration by default provides 3 output streams:
 
 - 1920x1080 H264
@@ -93,12 +112,6 @@ The streams can be accessed using the following URLs:
 - rtsp://IP:8554/video5/unicast
 - http://IP:8080/?action=stream
 - http://IP:8080/?action=snapshot
-
-
-## Usage
-
-OpenMiko is actively developed and releases are only provided when the OpenMiko distribution is stable.
-Developers who are interested in compiling it from scratch should refer to the [development](doc/development.md) documentation.
 
 
 ## Settings

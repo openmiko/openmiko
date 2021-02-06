@@ -13,7 +13,7 @@ case "$1" in
 
 	if [ -e /dev/mmcblk0p1 ]; then
 		mkdir -p /sdcard
-		mount /dev/mmcblk0p1 /sdcard
+		mount -t vfat /dev/mmcblk0p1 /sdcard -o rw,umask=0000,dmask=0000
 		sleep 1
 		echo "Mount /sdcard successful"
 
@@ -21,8 +21,7 @@ case "$1" in
 		mkdir -p /sdcard/var/log
 		cp -r /var/log/* /sdcard/var/log
 		rm /var/log
-		mkdir -p /var/log
-		mount /sdcard/var/log /var/log
+		ln -s /sdcard/var/log /var/log
 	fi;
 
 	;;

@@ -7,8 +7,13 @@ case "$1" in
 	. /usr/bin/libgpio.sh
 	gpio_select_gpiochip 0
 
-	gpio_export 25
-	gpio_export 26
+	gpio_export '25'
+	gpio_export '26'
+
+	# Turn on power to USB port (needed for older FCC IDs 2ANJHWYZEC02)
+	gpio_export '47'
+	gpio_direction_output '47'
+	gpio_set_value '47' '1'
 
 	;;
   stop)

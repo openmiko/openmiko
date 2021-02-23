@@ -124,3 +124,40 @@ Sharpness : 128
 Contrast : 127
 Brightness : 128
 ```
+
+### Debugging with gdb
+
+https://www.oreilly.com/library/view/mastering-embedded-linux/9781787283282/43e79c1d-f609-456d-841e-41c595245c5e.xhtml
+
+Had to remove libiberty.a from `output/host`
+http://lists.busybox.net/pipermail/buildroot/2015-July/131981.html
+
+
+[Buildroot] Failed to build gdb on host side
+Arnout Vandecappelle arnout at mind.be
+Thu Jul 9 22:56:31 UTC 2015
+Previous message: [Buildroot] Failed to build gdb on host side
+Next message: [Buildroot] [PATCH v2 1/2] ltrace: update to current master
+Messages sorted by: [ date ] [ thread ] [ subject ] [ author ]
+On 07/07/15 11:44, Viallard Anthony wrote:
+> On 07/03/2015 07:02 PM, Arnout Vandecappelle wrote:
+>> On 07/03/15 12:29, Viallard Anthony wrote:
+[snip]
+> The file libiberty.a seems to come from the gcc-final package 
+
+ Right, seems that gcc 4.7.4 installs it but later versions don't do that anymore.
+
+ Simplest workaround is to remove libiberty.a from HOST_DIR after the build. I'm
+not sure if it's still worth it to do this in buildroot itself.
+
+ Regards,
+
+
+
+If you are using Buildroot, you will find that the sysroot is in output/host/usr/<toolchain>/sysroot, and that there is a symbolic link to it in output/staging. So, for Buildroot, you would ...
+
+
+set sysroot output/staging/
+
+
+target remote 172.26.0.2:4444

@@ -144,6 +144,19 @@ make linux-rebuild
 make
 ```
 
+### Changing the init script that is embedded in the kernel
+
+There is an init script that is embedded in the linux kernel inside `initramfs_skeleton`. Changes to the init file there require a rebuild of the kernel.
+
+```
+/src/buildscripts/linux_prebuild_hook.sh
+make rootfs-initramfs
+make linux-rebuild
+make
+```
+
+
+
 
 ### Custom buildroot packages
 

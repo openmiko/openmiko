@@ -12,7 +12,7 @@ NCURSES_LICENSE = MIT with advertising clause
 NCURSES_LICENSE_FILES = COPYING
 NCURSES_CONFIG_SCRIPTS = ncurses$(NCURSES_LIB_SUFFIX)6-config
 NCURSES_PATCH = \
-	$(addprefix https://invisible-mirror.net/archives/ncurses/$(NCURSES_VERSION)/, \
+	$(addprefix http://sources.buildroot.net/ncurses/$(NCURSES_VERSION)/, \
 		ncurses-6.1-20190609-patch.sh.bz2 \
 		ncurses-6.1-20190615.patch.gz \
 		ncurses-6.1-20190623.patch.gz \

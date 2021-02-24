@@ -22,6 +22,15 @@ case "$1" in
 		cp /sdcard/wpa_supplicant.conf "$CONFIGPATH/wpa_supplicant.conf"
 	fi
 
+	# Remove any \r line endings incase this was done on Windows
+	#
+	# :a create a label 'a'
+	# N append the next line to the pattern space
+	# $! if not the last line, ba branch (go to) label 'a'
+	# s substitute, /\n/ regex for new line, / / by a space, /g global match (as many times as it can)
+	# https://stackoverflow.com/questions/1251999/how-can-i-replace-a-newline-n-using-sed
+	sed -i ':a;N;$!ba;s/\r//g' "$CONFIGPATH/wpa_supplicant.conf"
+
 	wpa_supplicant -Dnl80211 -i wlan0 -c "$CONFIGPATH/wpa_supplicant.conf" -B
 
 	HOSTNAME=`cat /etc/hostname`

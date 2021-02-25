@@ -3,9 +3,10 @@
 . /usr/bin/libgpio.sh
 
 gpio_select_gpiochip 0
-gpio_direction_output 49
+
 gpio_direction_output 25
 gpio_direction_output 26
+gpio_direction_output 49
 
 ir_led() {
 	case "$1" in

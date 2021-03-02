@@ -1,6 +1,10 @@
 #!/bin/bash
 set -x
 
+. /usr/bin/libgpio.sh
+gpio_select_gpiochip 0
+
+
 # /etc/dropbear is a symbolic link to /var/run/dropbear
 # Remove it so overlays in that directory will work
 rm -f /etc/dropbear
@@ -8,11 +12,7 @@ mkdir -p /etc/dropbear
 
 logger -s -t general_init "Setting up SDCard access"
 
-echo 43 > /sys/class/gpio/export
-echo out > /sys/class/gpio/gpio43/direction
-sleep 3
-
-if [ -e /dev/mmcblk0p1 ]; then
+setup_sdcard_access() {
 	mkdir -p /sdcard
 	mount -t vfat /dev/mmcblk0p1 /sdcard -o rw,umask=0000,dmask=0000
 	sleep 1
@@ -24,8 +24,32 @@ if [ -e /dev/mmcblk0p1 ]; then
 	# Current state is /var/log -> ../tmp
 	# At this point /tmp is empty (not sure why)
 	rm /var/log
-	ln -s /sdcard/var/log /var/log
+	ln -s /sdcard/var/log /var/log	
+}
+
+
+# Determine if sdcard access needs to be setup
+# On WyzeCam Pan units the /dev/mmcblk0p1 is available without having
+# to export pin 43. However on WyzeCams you need to export 43
+# for the mmc devices to show up
+
+if [ -e /dev/mmcblk0p1 ]; then
+	setup_sdcard_access
+else
+	# If the device doesn't exist then either the sdcard is not present or we need to export the pin
+	gpio_export '43'
+	gpio_direction_output '43'
+	sleep 3
+
+	# If after exporting the device exists then setup
+	if [ -e /dev/mmcblk0p1 ]; then
+		setup_sdcard_access
+	else
+		# If it still doesn't exist then unexport and continue
+		gpio_unexport '43'
+	fi;
 fi;
+
 
 logger -s -t general_init "Mounting flash partitions"
 

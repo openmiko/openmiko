@@ -9,6 +9,7 @@ case "$1" in
 
 	gpio_export '25'
 	gpio_export '26'
+	gpio_export '49'
 
 	# Turn on power to USB port (needed for older FCC IDs 2ANJHWYZEC02)
 	gpio_export '47'

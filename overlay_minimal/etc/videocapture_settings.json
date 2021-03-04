@@ -1,5 +1,9 @@
 {
   "comment": "3 encoders (1920x1080 H264, 1920x1080 MJPEG, and 640x80 H264",
+  "general_settings": {
+    "flip_vertical": 0,
+    "flip_horizontal": 0
+  },
   "frame_sources": [{
     "id": 0,
     "pic_width": 1920,

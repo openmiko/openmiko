@@ -136,6 +136,19 @@ In `openmiko.conf` copy the default one from https://github.com/openmiko/openmik
 While the camera is started hold down reset button for at least 6 seconds.
 After 6 seconds the blue LED should turn on and pulse 3 heartbeats. The `/config` partition (which is mounted to the persistent flash memory itself) will be removed.
 
+## Troubleshooting
+
+If you can't seem to get up and running here are some things to check:
+
+- Make sure you are using unix style line endings in wpa_supplicant.conf (this was fixed in a later release)
+- The `config/overlay/etc` directory is *cAsE sEnsItiVe*. Make sure it is all lowercase.
+- The MAC address does change when flashing from the one on the sticker. Check your router to see the new DHCP address.
+- There are some reports that assigning a static IP / DHCP reservation does help the WyzeCam connect to the network
+- Logs should appear on the sdcard if the system is properly booting
+- Some WyzeCams have a buggy bootloader from the factory and won't flash anything. The only way around this is to flash a new bootloader.
+- If you flashed the custom HD Dafang bootloader you will need to revert to the original one. A copy of the old WyzeCam V2 original bootloader is here: https://github.com/openmiko/openmiko/blob/master/stock_firmware/wyzecam_v2/wyzecam_v2_stock_bootloader.bin
+- Join the Slack and ask a question for more help
+
 
 ## Issues and support
 

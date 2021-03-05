@@ -41,8 +41,14 @@ jobs:
         id: vars
         run: echo ::set-output name=tag::$(echo ${GITHUB_REF:10})
 
-      - name: Copy the openmiko_firmware.bin out of container
+      - name: Copy openmiko_firmware.bin out of container
         run: docker run --rm --entrypoint cat openmiko/openmiko:${{steps.vars.outputs.tag}} /src/release/openmiko_firmware.bin > /tmp/openmiko_firmware.bin
+
+      - name: Copy rootfs.jffs2 out of container
+        run: docker run --rm --entrypoint cat openmiko/openmiko:${{steps.vars.outputs.tag}} /src/release/rootfs.jffs2 > /tmp/rootfs.jffs2
+
+      - name: Copy uImage.lzma (kernel) out of container
+        run: docker run --rm --entrypoint cat openmiko/openmiko:${{steps.vars.outputs.tag}} /src/release/uImage.lzma > /tmp/uImage.lzma
 
       - name: Create Release
         id: create_release
@@ -67,3 +73,25 @@ jobs:
           asset_path: /tmp/openmiko_firmware.bin
           asset_name: openmiko_firmware.bin
           asset_content_type: application/octet-stream
+
+      - name: Upload RootFS Image
+        id: upload-rootfs-image
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: /tmp/rootfs.jffs2
+          asset_name: rootfs.jffs2
+          asset_content_type: application/octet-stream
+
+      - name: Upload Kernel Image
+        id: upload-kernel-image
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: /tmp/uImage.lzma
+          asset_name: uImage.lzma
+          asset_content_type: application/octet-stream          

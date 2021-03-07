@@ -141,6 +141,25 @@ After 6 seconds the blue LED should turn on and pulse 3 heartbeats. The `/config
 If you can't seem to get up and running here are some things to check:
 
 - Make sure you are using unix style line endings in wpa_supplicant.conf (this was fixed in a later release)
+- Inside wpa_supplicant.conf the `psk` and `ssid` settings need to have double quotes around the string. For example:
+
+```
+ctrl_interface=/var/run/wpa_supplicant
+ctrl_interface_group=0
+ap_scan=1
+
+network={
+        ssid="wifi_network_name"
+        # Uncomment to connect to Hidden SSIDs
+        #scan_ssid=1 
+        key_mgmt=WPA-PSK
+        pairwise=CCMP TKIP
+        group=CCMP TKIP WEP104 WEP40
+        psk="password_keep_double_quotes"
+        priority=2
+}
+```
+
 - The `config/overlay/etc` directory is *cAsE sEnsItiVe*. Make sure it is all lowercase.
 - The MAC address does change when flashing from the one on the sticker. Check your router to see the new DHCP address.
 - There are some reports that assigning a static IP / DHCP reservation does help the WyzeCam connect to the network

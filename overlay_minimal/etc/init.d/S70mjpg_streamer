@@ -14,8 +14,8 @@ case "$1" in
 		exit 0
 	fi
 
- 	echo -n "Starting mjpg_streamer: "
-	mjpg_streamer -i "input_v4l2loopback.so -d /dev/video4 --fps 25" -o "output_http.so" > /dev/null 2>&1 &
+ 	echo -n "Starting mjpg_streamer ($MJPEG_FPS fps): "
+	mjpg_streamer -i "input_v4l2loopback.so -d /dev/video4 --fps $MJPEG_FPS" -o "output_http.so" > /dev/null 2>&1 &
 	[ $? == 0 ] && echo "OK" || echo "FAIL"
 	;;
   stop)

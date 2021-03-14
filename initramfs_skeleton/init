@@ -1,9 +1,24 @@
 #!/bin/sh
 # devtmpfs does not get automounted for initramfs
 /bin/mount -t devtmpfs devtmpfs /dev
+
+# Setup this program to get input from /dev/console, and output to /dev/console
+# file descriptor #0: standard input stream, or stdin for short.
+# file descriptor #1: standard output stream, or stdout for short.
+# file descriptor #2: standard error output stream, or stderr for short.
 exec 0</dev/console
 exec 1>/dev/console
 exec 2>/dev/console
+
+
+read -n 1 -s -r -t 2 -p "Press any key to interrupt init" 
+
+if [ $? -eq 0 ]
+then
+  echo "Dropping to a shell"
+  exec /bin/sh
+fi
+
 
 echo "Starting full root buildout"
 
@@ -16,6 +31,55 @@ mkdir -p /jffsroot
 mount -t jffs2 /dev/mtdblock2 /jffsroot
 
 /bin/busybox --install /bin
+
+
+
+
+setup_sdcard_access() {
+	mkdir -p /sdcard
+	mount -t vfat /dev/mmcblk0p1 /sdcard -o rw,umask=0000,dmask=0000
+	sleep 1
+	echo "Mount /sdcard successful"
+}
+
+# Determine if sdcard access needs to be setup
+# On WyzeCam Pan units the /dev/mmcblk0p1 is available without having
+# to export pin 43. However on WyzeCams you need to export 43
+# for the mmc devices to show up
+
+if [ -e /dev/mmcblk0p1 ]; then
+	setup_sdcard_access
+else
+	# If the device doesn't exist then either the sdcard is not present or we need to export the pin
+	echo 43 > /sys/class/gpio/export
+	echo out > /sys/class/gpio/gpio43/direction
+	sleep 3
+
+	# If after exporting the device exists then setup
+	if [ -e /dev/mmcblk0p1 ]; then
+		setup_sdcard_access
+	else
+		# If it still doesn't exist then unexport and continue
+		echo 43 > /sys/class/gpio/unexport 
+	fi;
+fi;
+
+# About the earliest we can read configuration parameters
+OPENMIKO_CONFIG_FILE=/sdcard/config/overlay/etc/openmiko.conf
+if [[ -f $OPENMIKO_CONFIG_FILE ]]; then
+	. $OPENMIKO_CONFIG_FILE
+fi
+
+if [ "$ENABLE_DEBUG" -eq "1" ]; then
+	echo "Enabling kernel initramfs debug log to sdcard"
+	LOG_FILE="/sdcard/initramfs_output.log"
+	rm -f $LOG_FILE && touch $LOG_FILE
+
+	mknod /root/stdout_and_stderr.pipe p
+	cat /root/stdout_and_stderr.pipe | tee $LOG_FILE &
+	exec 1>/root/stdout_and_stderr.pipe
+	exec 2>/root/stdout_and_stderr.pipe
+fi
 
 echo "Mounted jffsroot"
 
@@ -63,6 +127,11 @@ mount --move /proc /newroot/proc
 # ls -i /
 
 echo "Switching root to /newroot"
+
+# Switch back to normal logging
+exec 1>/dev/console
+exec 2>/dev/console
+
 # switch_root moves already mounted /proc, /dev, /sys and /run to newroot
 exec busybox switch_root /newroot /sbin/init
 

@@ -7,3 +7,13 @@ The skeleton is used because you cannot commit into git the empty directories or
 ```
 CONFIG_INITRAMFS_SOURCE="/openmiko/build/buildroot-2016.02/output/images/initramfs.cpio"
 ```
+# Rebuilding
+
+To rebuild the initramfs and the firmware together:
+
+```
+/src/buildscripts/linux_prebuild_hook.sh
+make rootfs-initramfs
+make linux-rebuild
+make
+```

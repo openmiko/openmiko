@@ -15,7 +15,17 @@ echo "Mounted core filesystems"
 mkdir -p /jffsroot
 mount -t jffs2 /dev/mtdblock2 /jffsroot
 
+/bin/busybox --install /bin
+
 echo "Mounted jffsroot"
+
+# There really should only be one file in the jffsroot: rootfs.tar.xz
+# In some cases there will be other stuff leftover because the flash
+# doesn't totally erase everything. This causes an error:
+# tar: invalid tar magic
+# To fix this remove all the other files which will clean up the jffs
+# filesystem
+find /jffsroot ! -name 'rootfs.tar.xz' -type f -exec rm -f {} +
 
 mkdir -p /newroot
 

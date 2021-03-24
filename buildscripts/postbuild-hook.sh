@@ -78,12 +78,12 @@ rm -rf $IMAGES/jffsroot
 mkdir -p $IMAGES/jffsroot
 cp $ROOTFSFILE $IMAGES/jffsroot
 
-$JFFS2 -d $IMAGES/jffsroot -e 0x8000 -o $JFFSROOTIMG
-
+# Verbose, little endian, erase block size of 0x8000
+$JFFS2 -v -l -d $IMAGES/jffsroot -e 0x8000 -o $JFFSROOTIMG
 
 
 ROOTFS_BYTES=$(wc -c < "$JFFSROOTIMG")
-if [ $ROOTFS_BYTES -ge $ROOTFS_MAXSIZE ]; then
+if [ $ROOTFS_BYTES -gt $ROOTFS_MAXSIZE ]; then
 	echo "Error: rootfs image must be less than $ROOTFS_MAXSIZE. It is $ROOTFS_BYTES."
 	exit 1
 fi
@@ -92,6 +92,8 @@ fi
 # Combine kernel and rootfs into one file and pad it to total size of flash
 KERNEL_AND_ROOT="$IMAGES/kernel_and_root.bin"
 cat $PADDED_KERNEL $JFFSROOTIMG > $KERNEL_AND_ROOT
+
+echo "Maximum size of flash image: $FLASH_MAXSIZE"
 truncate -s $FLASH_MAXSIZE $KERNEL_AND_ROOT
 
 

@@ -33,8 +33,6 @@ mount -t jffs2 /dev/mtdblock2 /jffsroot
 /bin/busybox --install /bin
 
 
-
-
 setup_sdcard_access() {
 	mkdir -p /sdcard
 	mount -t vfat /dev/mmcblk0p1 /sdcard -o rw,umask=0000,dmask=0000
@@ -81,15 +79,10 @@ if [ "$ENABLE_DEBUG" -eq "1" ]; then
 	exec 2>/root/stdout_and_stderr.pipe
 fi
 
+
 echo "Mounted jffsroot"
 
-# There really should only be one file in the jffsroot: rootfs.tar.xz
-# In some cases there will be other stuff leftover because the flash
-# doesn't totally erase everything. This causes an error:
-# tar: invalid tar magic
-# To fix this remove all the other files which will clean up the jffs
-# filesystem
-find /jffsroot ! -name 'rootfs.tar.xz' -type f -exec rm -f {} +
+find /jffsroot
 
 mkdir -p /newroot
 
@@ -100,12 +93,50 @@ echo 48M > /sys/block/zram0/disksize
 busybox mke2fs /dev/zram0 -b 4096
 mount /dev/zram0 /newroot
 
-#mount -t tmpfs newroot /newroot
+# Checks for a file and if present writes a new bootloader
+upgrade_bootloader() {
+	UPGRADE_BOOTLOADER_FILE=/sdcard/DO_BOOTLOADER_UPGRADE
+	UBOOT_FILE=/sdcard/u-boot-lzo-with-spl.bin
+
+	if [[ -f "$UPGRADE_BOOTLOADER_FILE" && -f "$UBOOT_FILE" ]]; then
+		echo "Upgrading bootloader using file: $UBOOT_FILE"
+
+		# Do a blue heartbeat while upgrading bootloader
+		echo "none" > /sys/class/leds/led_blue/trigger
+		echo "none" > /sys/class/leds/led_yellow/trigger
+		echo "heartbeat" > /sys/class/leds/led_blue/trigger
+
+		# Backup old bootloader
+		dd if=/dev/mtdblock0 of="/sdcard/uboot_backup.bin"
+
+		# Erase the bootloader
+		/bin/flash_eraseall /dev/mtd0
+
+		# Flash new bootloader
+		dd if=$UBOOT_FILE of=/dev/mtdblock0
+
+		# Remove the file to indicate we've done the upgrade
+		rm "/sdcard/$UPGRADE_BOOTLOADER_FILE"
+
+		# Set leds back to yellow blink
+		echo "none" > /sys/class/leds/led_blue/trigger
+		echo "timer" > /sys/class/leds/led_yellow/trigger
+	fi;
+}
+upgrade_bootloader
+
+# Unarchive the root file system to the new root directory
 tar -xvf /jffsroot/rootfs.tar.xz -C /newroot
 
 if [ $? != 0 ]
 then
-  echo "Extracting root filesystem failed."
+  echo "Error: Extracting root filesystem failed."
+  echo "This happens on occasion from a bad flash. Try flashing again."
+
+  echo "md5sum of /jffsroot/rootfs.tar.xz: "
+  md5sum /jffsroot/rootfs.tar.xz
+  rm -rf /jffsroot/*
+
   exec /bin/sh
   exit 1
 fi

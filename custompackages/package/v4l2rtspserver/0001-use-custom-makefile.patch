@@ -1,6 +1,6 @@
---- a/Makefile	1970-01-01 00:00:00.000000000 +0000
-+++ b/Makefile	2020-11-01 01:39:10.876741771 +0000
-@@ -0,0 +1,64 @@
+--- /dev/null	2021-03-07 23:30:35.225098650 +0000
++++ /src/submodules/v4l2rtspserver/Makefile	2021-04-21 01:32:30.033725972 +0000
+@@ -0,0 +1,66 @@
 +ifneq ($(SRC),)
 +VPATH=$(SRC)
 +endif
@@ -30,7 +30,10 @@
 +	src/ServerMediaSubsession.o \
 +	src/TSServerMediaSubsession.o \
 +	src/UnicastServerMediaSubsession.o \
-+
++	src/V4l2RTSPServer.o \
++	src/AudioCompressor.o \
++	src/NullAudioCompressor.o \
++	src/MP3AudioCompressor.o 
 +
 +# v4l2wrapper
 +CXXFLAGS += -I$(PREFIX)/include/libv4l2cpp
@@ -42,7 +45,6 @@
 +ifneq ($(HAVE_ALSA),)
 +CXXFLAGS += -DHAVE_ALSA
 +RTSPSERVER_OBJS += src/ALSACapture.o
-+RTSPSERVER_OBJS += src/MP3ALSACapture.o
 +LDFLAGS += -lasound
 +endif
 +

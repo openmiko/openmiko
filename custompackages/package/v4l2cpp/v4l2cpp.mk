@@ -5,7 +5,8 @@
 ################################################################################
 
 # 5/24/2020 master Version
-V4L2CPP_VERSION = 2d162272eaace43c9b54787afdded03d40579e39
+#V4L2CPP_VERSION = 2d162272eaace43c9b54787afdded03d40579e39
+V4L2CPP_VERSION = c165469e94521b767b548c2b34dcbb57a027bb01
 V4L2CPP_SITE = https://github.com/mpromonet/libv4l2cpp
 V4L2CPP_SITE_METHOD = git
 V4L2CPP_LICENSE = UNLICENSE

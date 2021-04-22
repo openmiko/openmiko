@@ -101,8 +101,8 @@ There are some jagged edges on the 640x360 stream that I haven't been able to fi
 
 The streams can be accessed using the following URLs:
 
-- rtsp://IP:8554/video3/unicast
-- rtsp://IP:8554/video5/unicast
+- rtsp://IP:8554/video3_unicast
+- rtsp://IP:8554/video5_unicast
 - http://IP:8080/?action=stream
 - http://IP:8080/?action=snapshot
 

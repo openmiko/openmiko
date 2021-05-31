@@ -110,6 +110,13 @@ The streams can be accessed using the following URLs:
 
 Settings can be changed by editing /etc/videocapture_settings.json. However the changes will not persist unless you write them to the flash. To ease saving these settings copy the file to `/config/overlay/etc/videocapture_settings.json`. The files in /config are mounted to the flash chip and will survive reboots.
 
+```
+"general_settings": {
+	"flip_vertical": 0,			// 1 flips image along vertical axis, 0 disables
+	"flip_horizontal": 0,		// 1 flips image along horizontal axis, 0 disables
+	"show_timestamp": 1 		// 1 enables timestamp, 0 disables
+},
+```
 
 ### Writing Config Files
 

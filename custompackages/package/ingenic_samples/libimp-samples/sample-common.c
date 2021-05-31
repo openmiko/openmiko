@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <linux/videodev2.h>
 
 #include <imp/imp_log.h>
 #include <imp/imp_common.h>
@@ -28,9 +27,6 @@
 #include "sample-common.h"
 
 #define TAG "Sample-Common"
-
-# define FRAME_WIDTH  1920
-# define FRAME_HEIGHT 1080
 
 
 struct chn_conf chn[FS_CHN_NUM] = {
@@ -342,29 +338,15 @@ int sample_encoder_init()
 			rc_attr->rcMode = ENC_RC_MODE_H264VBR;
 			rc_attr->attrH264Vbr.outFrmRate.frmRateNum = imp_chn_attr_tmp->outFrmRateNum;
 			rc_attr->attrH264Vbr.outFrmRate.frmRateDen = imp_chn_attr_tmp->outFrmRateDen;
-			// rc_attr->attrH264Vbr.maxGop = 1 * rc_attr->attrH264Vbr.outFrmRate.frmRateNum / rc_attr->attrH264Vbr.outFrmRate.frmRateDen;
-			rc_attr->attrH264Vbr.maxGop = 10;
-			rc_attr->attrH264Vbr.maxQp = 45; // 38 before
-			rc_attr->attrH264Vbr.minQp = 25; // 15 before
+			rc_attr->attrH264Vbr.maxGop = 1 * rc_attr->attrH264Vbr.outFrmRate.frmRateNum / rc_attr->attrH264Vbr.outFrmRate.frmRateDen;
+			rc_attr->attrH264Vbr.maxQp = 38;
+			rc_attr->attrH264Vbr.minQp = 15;
 			rc_attr->attrH264Vbr.staticTime = 1;
-			rc_attr->attrH264Vbr.maxBitRate = 500 * (imp_chn_attr_tmp->picWidth * imp_chn_attr_tmp->picHeight) / (1920 * 1080);
+			rc_attr->attrH264Vbr.maxBitRate = 100 * (imp_chn_attr_tmp->picWidth * imp_chn_attr_tmp->picHeight) / (1920 * 1080);
 			rc_attr->attrH264Vbr.changePos = 50;
 			rc_attr->attrH264Vbr.FrmQPStep = 3;
 			rc_attr->attrH264Vbr.GOPQPStep = 15;
 			rc_attr->attrH264FrmUsed.enable = 1;
-
-
-			IMP_LOG_DBG(TAG, "frmRateNum %d \n ", rc_attr->attrH264Vbr.outFrmRate.frmRateNum);
-			IMP_LOG_DBG(TAG, "frmRateDen %d \n ", rc_attr->attrH264Vbr.outFrmRate.frmRateDen);
-			IMP_LOG_DBG(TAG, "maxGop %d \n ", rc_attr->attrH264Vbr.maxGop);
-			IMP_LOG_DBG(TAG, "maxQp %d \n ", rc_attr->attrH264Vbr.maxQp);
-			IMP_LOG_DBG(TAG, "minQp %d \n ", rc_attr->attrH264Vbr.minQp);
-			IMP_LOG_DBG(TAG, "staticTime %d \n ", rc_attr->attrH264Vbr.staticTime);
-			IMP_LOG_DBG(TAG, "maxBitRate %d \n ", rc_attr->attrH264Vbr.maxBitRate);
-			IMP_LOG_DBG(TAG, "changePos %d \n ", rc_attr->attrH264Vbr.changePos);
-			IMP_LOG_DBG(TAG, "FrmQPStep %d \n ", rc_attr->attrH264Vbr.FrmQPStep);
-			IMP_LOG_DBG(TAG, "GOPQPStep %d \n ", rc_attr->attrH264Vbr.GOPQPStep);
-
 
 
 
@@ -741,19 +723,6 @@ static int save_stream(int fd, IMPEncoderStream *stream)
 	return 0;
 }
 
-
-void print_format(struct v4l2_format*vid_format) {
-  printf("	vid_format->type                =%d\n",	vid_format->type );
-  printf("	vid_format->fmt.pix.width       =%d\n",	vid_format->fmt.pix.width );
-  printf("	vid_format->fmt.pix.height      =%d\n",	vid_format->fmt.pix.height );
-  printf("	vid_format->fmt.pix.pixelformat =%d\n",	vid_format->fmt.pix.pixelformat);
-  printf("	vid_format->fmt.pix.sizeimage   =%d\n",	vid_format->fmt.pix.sizeimage );
-  printf("	vid_format->fmt.pix.field       =%d\n",	vid_format->fmt.pix.field );
-  printf("	vid_format->fmt.pix.bytesperline=%d\n",	vid_format->fmt.pix.bytesperline );
-  printf("	vid_format->fmt.pix.colorspace  =%d\n",	vid_format->fmt.pix.colorspace );
-}
-
-
 int sample_do_get_h264_stream(int nr_frames)
 {
 	int ret;
@@ -772,12 +741,12 @@ int sample_do_get_h264_stream(int nr_frames)
 	char now_str[32];
 	strftime(now_str, 40, "%Y%m%d%I%M%S", now_tm);
 
-	char stream_path[128] = "/dev/video3";
-	// sprintf(stream_path, "/dev/video4",
-	// 		STREAM_FILE_PATH_PREFIX, now_str);
+	char stream_path[128];
+	sprintf(stream_path, "%s/stream-%s.h264",
+			STREAM_FILE_PATH_PREFIX, now_str);
 
 	IMP_LOG_DBG(TAG, "Open Stream file %s ", stream_path);
-	int stream_fd = open(stream_path, O_WRONLY, 0777);
+	int stream_fd = open(stream_path, O_RDWR | O_CREAT | O_TRUNC, 0777);
 	if (stream_fd < 0) {
 		IMP_LOG_ERR(TAG, "failed: %s\n", strerror(errno));
 		return -1;
@@ -785,7 +754,7 @@ int sample_do_get_h264_stream(int nr_frames)
 	IMP_LOG_DBG(TAG, "OK\n");
 
 	int i;
-	for (;;) {
+	for (i = 0; i < nr_frames; i++) {
 		/* Polling H264 Stream, set timeout as 1000msec */
 		ret = IMP_Encoder_PollingStream(ENC_H264_CHANNEL, 1000);
 		if (ret < 0) {
@@ -887,100 +856,60 @@ int sample_do_get_jpeg_snap(void)
 
 void *get_h264_stream(void *args)
 {
-	// This is the command sample-Encoder-h264
-
-	int i, j, z, ret;
-	char stream_path[64] = "/dev/video3";
-	struct v4l2_capability vid_caps;
-	struct v4l2_format vid_format;
-	int frame_counter;
+	int i, j, ret;
+	char stream_path[64];
 
 	i = (int ) (*((int*)args));
 
+	ret = IMP_Encoder_StartRecvPic(i);
+	if (ret < 0) {
+		IMP_LOG_ERR(TAG, "IMP_Encoder_StartRecvPic(%d) failed\n", i);
+		return ((void *)-1);
+	}
 
-	// sprintf(stream_path, "%s/stream-%d.h264",
-	// 		STREAM_FILE_PATH_PREFIX, i);
+	sprintf(stream_path, "%s/stream-%d.h264",
+			STREAM_FILE_PATH_PREFIX, i);
 
 	IMP_LOG_DBG(TAG, "Open Stream file %s ", stream_path);
-	int stream_fd = open(stream_path, O_WRONLY, 0777);
-
-	ret = ioctl(stream_fd, VIDIOC_QUERYCAP, &vid_caps);
-
-	memset(&vid_format, 0, sizeof(vid_format));
-
-	// V4L2_FMT_FLAG_CONTINUOUS_BYTESTREAM
-
-	vid_format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-	vid_format.fmt.pix.width = FRAME_WIDTH;
-	vid_format.fmt.pix.height = FRAME_HEIGHT;
-	vid_format.fmt.pix.pixelformat = V4L2_PIX_FMT_H264;
-	vid_format.fmt.pix.sizeimage = 0;
-	vid_format.fmt.pix.field = V4L2_FIELD_NONE;
-	vid_format.fmt.pix.bytesperline = 0;
-	vid_format.fmt.pix.colorspace = V4L2_PIX_FMT_YUV420;
-
-  	print_format(&vid_format);
-	ret = ioctl(stream_fd, VIDIOC_S_FMT, &vid_format);
-
-
-
+	int stream_fd = open(stream_path, O_RDWR | O_CREAT | O_TRUNC, 0777);
 	if (stream_fd < 0) {
 		IMP_LOG_ERR(TAG, "failed: %s\n", strerror(errno));
 		return ((void *)-1);
 	}
 	IMP_LOG_DBG(TAG, "OK\n");
 
-	// Wait for other end to connect
-
-
-
-
-	for (;;) {
-		usleep(40);
-
-		ret = IMP_Encoder_StartRecvPic(i);
+	for (j = 0; j < NR_FRAMES_TO_SAVE; j++) {
+		ret = IMP_Encoder_PollingStream(i, 1000);
 		if (ret < 0) {
-			IMP_LOG_ERR(TAG, "IMP_Encoder_StartRecvPic(%d) failed\n", i);
-			return ((void *)-1);
+			IMP_LOG_ERR(TAG, "Polling stream timeout\n");
+			continue;
 		}
 
-
-
-			ret = IMP_Encoder_PollingStream(i, 1000);
-			if (ret < 0) {
-				IMP_LOG_ERR(TAG, "Polling stream timeout\n");
-				continue;
-			}
-
-			IMPEncoderStream stream;
-			/* Get H264 Stream */
-			ret = IMP_Encoder_GetStream(i, &stream, 1);
-			if (ret < 0) {
-				IMP_LOG_ERR(TAG, "IMP_Encoder_GetStream() failed\n");
-				return ((void *)-1);
-			}
-			IMP_LOG_DBG(TAG, "i=%d, stream.packCount=%d, stream.h264RefType=%d\n", i, stream.packCount, stream.h264RefType);
-
-			ret = save_stream(stream_fd, &stream);
-			if (ret < 0) {
-				close(stream_fd);
-				return ((void *)ret);
-			}
-
-			IMP_Encoder_ReleaseStream(i, &stream);
-
-
-
-
-		ret = IMP_Encoder_StopRecvPic(i);
+		IMPEncoderStream stream;
+		/* Get H264 Stream */
+		ret = IMP_Encoder_GetStream(i, &stream, 1);
 		if (ret < 0) {
-			IMP_LOG_ERR(TAG, "IMP_Encoder_StopRecvPic() failed\n");
+			IMP_LOG_ERR(TAG, "IMP_Encoder_GetStream() failed\n");
 			return ((void *)-1);
 		}
+		//IMP_LOG_DBG(TAG, "i=%d, stream.packCount=%d, stream.h264RefType=%d\n", i, stream.packCount, stream.h264RefType);
 
+		ret = save_stream(stream_fd, &stream);
+		if (ret < 0) {
+			close(stream_fd);
+			return ((void *)ret);
+		}
+
+		IMP_Encoder_ReleaseStream(i, &stream);
 	}
 
 	close(stream_fd);
+
+	ret = IMP_Encoder_StopRecvPic(i);
+	if (ret < 0) {
+		IMP_LOG_ERR(TAG, "IMP_Encoder_StopRecvPic() failed\n");
+		return ((void *)-1);
+	}
 
 	return ((void *)0);
 }

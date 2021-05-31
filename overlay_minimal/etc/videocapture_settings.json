@@ -2,7 +2,8 @@
   "comment": "3 encoders (1920x1080 H264, 1920x1080 MJPEG, and 640x80 H264",
   "general_settings": {
     "flip_vertical": 0,
-    "flip_horizontal": 0
+    "flip_horizontal": 0,
+    "show_timestamp": 1
   },
   "frame_sources": [{
     "id": 0,
@@ -140,6 +141,20 @@
   }],
   "bindings": [
     {
+      "note": "Bind framesource 0,0 to OSD 0,0 ",
+      "source": {
+        "device": "DEV_ID_FS",
+        "group": 0,
+        "output": 0
+      },
+      "target": {
+        "device": "DEV_ID_OSD",
+        "group": 0,
+        "output": 0
+      }
+    },
+    {
+      "note": "Bind OSD 0,0 to encoder 0,0",
       "source": {
         "device": "DEV_ID_FS",
         "group": 0,

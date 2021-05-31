@@ -5,14 +5,14 @@
 
 case "$1" in
   start)
- 	echo -n "Starting ntpd: "
-	ntpd
-	[ $? == 0 ] && echo "OK" || echo "FAIL"
+	logger -s "Starting ntpd: "
+	/usr/sbin/ntpd
+	[ $? == 0 ] && logger -s "OK" || logger -s "FAIL"
 	;;
   stop)
-	echo -n "Stopping ntpd: "
+	logger -s "Stopping ntpd: "
 	killall ntpd
-	[ $? == 0 ] && echo "OK" || echo "FAIL"
+	[ $? == 0 ] && logger -s "OK" || logger -s "FAIL"
 	;;
   restart|reload)
 	"$0" stop

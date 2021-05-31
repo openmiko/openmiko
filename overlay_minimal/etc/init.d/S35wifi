@@ -35,7 +35,19 @@ case "$1" in
 
 	HOSTNAME=`cat /etc/hostname`
 
-	udhcpc -i wlan0 -b -A 20 -x hostname:$HOSTNAME
+	logger -s "Using hostname: $HOSTNAME"
+	logger -s "Attempting DHCP"
+
+	udhcpc -i wlan0 -b -A 20 -S -x hostname:$HOSTNAME
+
+	ADDRESS=`ifconfig wlan0 | grep "inet addr:"`
+	while [ -z "$ADDRESS" ]; do
+		logger -s "Waiting for DHCP address"
+		ADDRESS=`ifconfig wlan0 | grep "inet addr:"`
+		sleep 1
+		ifconfig | logger -s
+	done
+
 
 	;;
   stop)

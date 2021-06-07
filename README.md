@@ -37,7 +37,7 @@ This firmware is a drop in replacement for the stock firmware. Care has been tak
 
 For help join our Slack Channel:
 
-https://join.slack.com/t/openmiko/shared_invite/zt-pncu71b4-FiBzbKWr7LTTjsGVTnNOQg
+https://join.slack.com/t/openmiko/shared_invite/zt-ra392gba-0Nmcn~XrKK3yfKfxiiLeLw
 
 ## Overview
 

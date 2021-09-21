@@ -43,7 +43,8 @@ fi
 # "rootfs" - 0x350000 or 3,473,408 bytes
 # "driver" - 0xa0000 or 655,360 bytes
 # "appfs" - 0x4a0000 or 4,849,664 bytes
-
+#
+# The total size the rootfs+driver+appfs is 8978432. However the /dev/mtdblock2 partition is 13828096.
 
 KERNEL="$IMAGES/uImage.lzma"
 PADDED_KERNEL="$IMAGES/uImagePadded.lzma"
@@ -78,7 +79,9 @@ rm -rf $IMAGES/jffsroot
 mkdir -p $IMAGES/jffsroot
 cp $ROOTFSFILE $IMAGES/jffsroot
 
-# Verbose, little endian, erase block size of 0x8000
+# Verbose, little endian, erase block size of 32k or $((16#8000))
+#
+# TODO: https://2net.co.uk/tutorial/jffs2-summary
 $JFFS2 -v -l -d $IMAGES/jffsroot -e 0x8000 -o $JFFSROOTIMG
 
 

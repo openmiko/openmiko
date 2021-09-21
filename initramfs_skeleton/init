@@ -27,8 +27,7 @@ mount -t sysfs sysfs /sys
 
 echo "Mounted core filesystems"
 
-mkdir -p /jffsroot
-mount -t jffs2 /dev/mtdblock2 /jffsroot
+
 
 /bin/busybox --install /bin
 
@@ -68,7 +67,8 @@ if [[ -f $OPENMIKO_CONFIG_FILE ]]; then
 	. $OPENMIKO_CONFIG_FILE
 fi
 
-if [ "$ENABLE_DEBUG" -eq "1" ]; then
+
+if [[ "$ENABLE_DEBUG" == "1" ]]; then
 	echo "Enabling kernel initramfs debug log to sdcard"
 	LOG_FILE="/sdcard/initramfs_output.log"
 	rm -f $LOG_FILE && touch $LOG_FILE
@@ -80,6 +80,63 @@ if [ "$ENABLE_DEBUG" -eq "1" ]; then
 fi
 
 
+clear_unused_rootfs_space() {
+	# The rootfs, appfs, drivers Wyze partitions have a total size of 8978432.
+	# This is the most I can write with a stock u-boot bootloader.
+	# However the mtd partition is 13828096 bytes and runs into the old config partition
+	# This causes JFFS mount issues because when JFFS tries to mount it reads some of
+	# the old stuff and corrupts things.
+	#
+	# To fix this we will zero out the unused blocks. After they are zeroed
+	# we will mount the jffs filesystem which will autocreate CLEANMARKER
+	# blocks.
+	#
+	# <mtdblock2 size> - <rootfs+appfs+drivers size> = <remainder>
+	#
+	# 13828096 bytes - 8978432 bytes = 4849664 bytes
+	# 
+	# 4849664 bytes in 32768 byte blocks is:
+	#
+	# 4849664 / 32768 = 148 blocks
+	#
+	# This command writes zeros
+	# dd if=/dev/zero of=/dev/mtdblock2 seek=274 count=148 bs=32768
+	#
+	# This one actually writes clean blocks
+	# New versions of flash_erase use the offset in blocks.
+	# Older ones like we have need it in bytes
+	# flash_erase --jffs2 /dev/mtd2 274 148
+
+	# Check the MD5 of the first block (32768 bytes)
+	UNUSED_ROOTFS_MD5SUM=`dd if=/dev/mtdblock2 skip=274 bs=32768 count=1 status=none | md5sum | cut -d ' ' -f 1`
+
+	if [[ "$UNUSED_ROOTFS_MD5SUM" != "2e2f3362dc6f14322e25bdd71dc38223" ]]; then
+		echo "Wiping unused flash. UNUSED_ROOTFS_MD5SUM: $UNUSED_ROOTFS_MD5SUM"
+
+		dd if=/dev/zero of=/dev/mtdblock2 seek=274 count=148 bs=32768
+
+		if [[ $? == 0 ]]; then
+			echo "Flash successfully wiped"			
+		fi
+	fi
+}
+clear_unused_rootfs_space
+
+mkdir -p /jffsroot
+
+# This mount will cause the zero'ed out blocks to turn into jffs2 cleanblocks
+# that look like this hexdump:
+#
+# 0000000 1985 2003 000c 0000 b0b1 e41e ffff ffff
+# 0000010 ffff ffff ffff ffff ffff ffff ffff ffff
+# *
+# 0008000 1985 2003 000c 0000 b0b1 e41e ffff ffff
+# 0008010 ffff ffff ffff ffff ffff ffff ffff ffff
+# *
+# 0010000 1985 2003 000c 0000 b0b1 e41e ffff ffff
+# 0010010 ffff ffff ffff ffff ffff ffff ffff ffff
+
+mount -t jffs2 /dev/mtdblock2 /jffsroot
 echo "Mounted jffsroot"
 
 find /jffsroot
@@ -124,6 +181,29 @@ upgrade_bootloader() {
 	fi;
 }
 upgrade_bootloader
+
+wipe_rootfs_mtd_partition() {
+	if [[ "$WIPE_ROOTFS" == "1" ]]; then
+		echo "Wiping /dev/mtd2 (rootfs partition)"
+		# Do a blue heartbeat
+		echo "none" > /sys/class/leds/led_blue/trigger
+		echo "none" > /sys/class/leds/led_yellow/trigger
+		echo "heartbeat" > /sys/class/leds/led_blue/trigger
+
+		umount /jffsroot
+		/bin/flash_eraseall /dev/mtd2
+
+		# Set leds back to yellow blink
+		echo "none" > /sys/class/leds/led_blue/trigger
+		echo "timer" > /sys/class/leds/led_yellow/trigger
+
+		echo "Wipe complete. Remove WIPE_ROOTFS flag and reflash the camera."
+	fi
+}
+wipe_rootfs_mtd_partition
+
+
+
 
 # Unarchive the root file system to the new root directory
 tar -xvf /jffsroot/rootfs.tar.xz -C /newroot

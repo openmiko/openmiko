@@ -16,7 +16,12 @@ case "$1" in
 		logger -s "Reading parameters from /etc/v4l2rtspserver.conf"
 		. /etc/v4l2rtspserver.conf
 
-		AUTH_PARAMS="-R $HTTP_AUTH_REALM -U $USERNAME:$PASSWORD"
+		AUTH_PARAMS="-U $USERNAME:$PASSWORD"
+
+		# If we have a realm, add it to AUTH_PARAMS
+		if [[ -v HTTP_AUTH_REALM ]]; then
+			AUTH_PARAMS="-R $HTTP_AUTH_REALM $AUTH_PARAMS"
+		fi
 	fi
 
 

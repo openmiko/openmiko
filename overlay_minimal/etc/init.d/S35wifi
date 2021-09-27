@@ -10,10 +10,17 @@ WIFI_MODULE=8189fs
 
 case "$1" in
   start)
-
 	logger -s "Starting wifi using module $WIFI_MODULE" 
 
-	modprobe $WIFI_MODULE
+	# Try to get the Wyze MAC address
+	WIFI_OPTIONS=""
+	if [[ "$USE_WYZE_MAC" -eq "1" ]] && [[ -f "/params/config/.product_config" ]]; then
+		MAC=$(awk -F= '/NETRELATED_MAC/ {print substr($2, 1, 12)}' /params/config/.product_config | sed 's/\(..\)/\1:/g;s/:$//')
+		logger -s "Using MAC $MAC"
+		WIFI_OPTIONS="rtw_initmac=$MAC"
+	fi
+
+	modprobe $WIFI_MODULE $WIFI_OPTIONS
 
 	CONFIGPATH="/etc"
 

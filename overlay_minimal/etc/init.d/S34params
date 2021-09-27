@@ -1,0 +1,41 @@
+#!/bin/bash
+#
+# Mount /params
+#
+
+
+. /etc/openmiko.conf
+
+case "$1" in
+  start)
+	if [[ "$USE_WYZE_MAC" -ne "1" ]]; then
+		echo "USE_WYZE_MAC is 0. Not mounting params."
+		exit 0
+	fi
+
+	echo "Mounting params on /params"
+
+	# Check if sdcard is mounted
+	if mountpoint -q /params; then
+		echo "/params already mounted"
+		exit 0
+	fi
+
+    mkdir -p /params
+    mount -t jffs2 /dev/mtdblock4 /params
+	;;
+  stop)
+	umount /params
+	;;
+  restart|reload)
+	"$0" stop
+	"$0" start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?
+
+

@@ -61,7 +61,7 @@ case "$1" in
 
 	# Disabling sound for now until we can look into the bugs more
 	sleep 1
-	#ffmpeg -fflags +genpts -re -nostats -nostdin -f oss -i /dev/dsp -codec:a copy -f alsa hw:0,0 > /dev/null &
+	ffmpeg -fflags +genpts -re -nostats -nostdin -ac 1 -f oss -i /dev/dsp -codec:a copy -f alsa hw:0,0 > /dev/null &
 
 	modprobe v4l2loopback devices=4
 

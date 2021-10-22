@@ -60,8 +60,11 @@ case "$1" in
 	modprobe snd-aloop index=0 pcm_substreams=2 enable=1
 
 	# Disabling sound for now until we can look into the bugs more
+	# The main bug I am dealing with is a race condition with the sound device
+	# and v4l2rtspserver and if it doesn't come up properly the camera does not have
+	# rtsp.
 	sleep 1
-	ffmpeg -fflags +genpts -re -nostats -nostdin -ac 1 -f oss -i /dev/dsp -codec:a copy -f alsa hw:0,0 > /dev/null &
+	#ffmpeg -fflags +genpts -re -nostats -nostdin -ac 1 -f oss -i /dev/dsp -codec:a copy -f alsa hw:0,0 > /dev/null &
 
 	modprobe v4l2loopback devices=4
 

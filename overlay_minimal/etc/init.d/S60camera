@@ -16,7 +16,12 @@ case "$1" in
 		logger -s "Reading parameters from /etc/v4l2rtspserver.conf"
 		. /etc/v4l2rtspserver.conf
 
-		AUTH_PARAMS="-R $HTTP_AUTH_REALM -U $USERNAME:$PASSWORD"
+		AUTH_PARAMS="-U $USERNAME:$PASSWORD"
+
+		# If we have a realm, add it to AUTH_PARAMS
+		if [[ -v HTTP_AUTH_REALM ]]; then
+			AUTH_PARAMS="-R $HTTP_AUTH_REALM $AUTH_PARAMS"
+		fi
 	fi
 
 
@@ -55,14 +60,17 @@ case "$1" in
 	modprobe snd-aloop index=0 pcm_substreams=2 enable=1
 
 	# Disabling sound for now until we can look into the bugs more
+	# The main bug I am dealing with is a race condition with the sound device
+	# and v4l2rtspserver and if it doesn't come up properly the camera does not have
+	# rtsp.
 	sleep 1
-	#ffmpeg -fflags +genpts -re -nostats -nostdin -f oss -i /dev/dsp -codec:a copy -f alsa hw:0,0 > /dev/null &
+	#ffmpeg -fflags +genpts -re -nostats -nostdin -ac 1 -f oss -i /dev/dsp -codec:a copy -f alsa hw:0,0 > /dev/null &
 
 	modprobe v4l2loopback devices=4
 
 	if ! ps | grep -wq [v]ideocapture; then
 		logger -s "Starting video frame capture process"
-		/usr/bin/videocapture /etc/videocapture_settings.json > /dev/null 2>&1 &
+		/usr/bin/videocapture /etc/videocapture_settings.json >> /var/log/videocapture.log 2>&1 &
 		sleep 10
 
         # Wait for the videocapture program to initialize the v4l2 device

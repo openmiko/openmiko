@@ -18,7 +18,7 @@ start_camera() {
 		AUTH_PARAMS="-U $USERNAME:$PASSWORD"
 
 		# If we have a realm, add it to AUTH_PARAMS
-		if [[ -v HTTP_AUTH_REALM ]]; then
+		if [ ! -z "$HTTP_AUTH_REALM" ]; then
 			AUTH_PARAMS="-R $HTTP_AUTH_REALM $AUTH_PARAMS"
 		fi
 	fi

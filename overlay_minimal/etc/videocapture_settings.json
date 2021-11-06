@@ -3,7 +3,8 @@
   "general_settings": {
     "flip_vertical": 0,
     "flip_horizontal": 0,
-    "show_timestamp": 1
+    "show_timestamp": 1,
+    "enable_audio": 1
   },
   "frame_sources": [{
     "id": 0,
@@ -78,7 +79,7 @@
   {
     "channel": 1,
     "group": 0,
-    "v4l2_device_path": "/dev/video4",        
+    "v4l2_device_path": "/dev/video4",
     "payload_type": "PT_JPEG",
     "buffer_size": 0,
     "profile": 0,

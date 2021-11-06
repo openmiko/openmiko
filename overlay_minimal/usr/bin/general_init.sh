@@ -5,6 +5,7 @@ set -x
 gpio_select_gpiochip 0
 
 SD_PARTITION=/dev/mmcblk0p1
+SD_FILESYSTEM=vfat
 if [[ -f /etc/openmiko.conf ]]; then
 	. /etc/openmiko.conf
 fi
@@ -20,7 +21,7 @@ logger -s -t general_init "Setting up SDCard access"
 setup_sdcard_access() {
 	mkdir -p /sdcard
 	# mount -t vfat $SD_PARTITION /sdcard -o rw,umask=0000,dmask=0000
-	mount -t ext2 $SD_PARTITION /sdcard -o rw
+	mount -t $SD_FILESYSTEM $SD_PARTITION /sdcard -o rw
 	sleep 1
 	echo "Mount /sdcard successful"
 

@@ -64,9 +64,11 @@ start_camera() {
 	sleep 1
 
 	if [ $ENABLE_AUDIO = "1" ]; then 
-		echo "Enabling Audio";
-		if ! ps | grep -wq 'ffmpeg -thread_queue_size'; then
-			ffmpeg -thread_queue_size 256 -fflags +genpts -re -nostats -nostdin -ac 1 -f oss -i /dev/dsp -codec:a copy -f alsa hw:0,0 > /dev/null &
+		if ! ps | grep -q '[f]fmpeg -thread_queue_size' ; then
+			echo "Starting FFMPEG audio thread..."
+			ffmpeg -thread_queue_size 256 -fflags +genpts -re -nostats -nostdin -ac 1 -f oss -i /dev/dsp -codec:a copy -f alsa hw:0,0 > /dev/null 2>&1 &
+		else
+			echo "FFMPEG is already running. Skipping."
 		fi
 	else
 		echo "Audio is set to disabled in openmiko.conf. Skipping starting ffmpeg"

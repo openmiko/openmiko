@@ -75,7 +75,22 @@ start_camera() {
 		echo "Audio is set to disabled in openmiko.conf. Skipping starting ffmpeg"
 	fi
 
-	modprobe v4l2loopback devices=4
+
+	# Only set the number of v4l2loopback devices that we need. This hopefully will save some memory.
+	DEVICE_COUNT=1 # Default to 1, not sure if this can be 0 or 1.
+	if [ ! -z "$VIDEO_DEV_1" ]; then
+		DEVICE_COUNT="$((DEVICE_COUNT + 1))"
+	fi
+	if [ ! -z "$VIDEO_DEV_2" ]; then
+		DEVICE_COUNT="$((DEVICE_COUNT + 1))"
+	fi
+	if [ ! -z "$VIDEO_DEV_3" ]; then
+		DEVICE_COUNT="$((DEVICE_COUNT + 1))"
+	fi
+
+	echo "Setting up $DEVICE_COUNT v4l2loopback device(s)"
+
+	modprobe v4l2loopback devices=$DEVICE_COUNT
 
 	if ! ps | grep -wq [v]ideocapture; then
 		logger -s "Starting video frame capture process"
@@ -104,7 +119,7 @@ start_camera() {
 	if ! ps | grep -wq [v]4l2rtspserver; then
 		logger -s "Starting v4l2rtspserver"
 		DEVICES=""
-		# Loop through devices to see if they're enabled
+		# Loop through devices to see if they're enabled and add them to rtspserver options
 		if [ ! -z "$VIDEO_DEV_1" ]; then
 			DEVICES="${VIDEO_DEV_1},hw:0,1 "
 		fi
@@ -115,7 +130,7 @@ start_camera() {
 			DEVICES="${DEVICES} ${VIDEO_DEV_3},hw:0,1 "
 		fi
 		#/usr/bin/v4l2rtspserver $AUTH_PARAMS -l 1 -A 48000 -C 1 -a S16_LE /dev/video3,hw:0,1 /dev/video4 > /dev/null &
-		/usr/bin/v4l2rtspserver $AUTH_PARAMS -A 48000 -C 1 -a S16_LE -l 1 $DEVICES > /dev/null &
+		/usr/bin/v4l2rtspserver $AUTH_PARAMS -A 48000 -C 1 -a S16_LE -l 1 $DEVICES >> /var/log/v4l2rtspserver.log 2>&1 &
 	fi
 
 	# Waiting for v4l2rtpserver to start

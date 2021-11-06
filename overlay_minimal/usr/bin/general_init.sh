@@ -8,6 +8,9 @@ SD_PARTITION=/dev/mmcblk0p1
 SD_FILESYSTEM=vfat
 if [[ -f /etc/openmiko.conf ]]; then
 	. /etc/openmiko.conf
+
+elif [[ -f /config/overlay/etc/openmiko.conf ]]; then
+	. /config/overlay/etc/openmiko.conf
 fi
 
 

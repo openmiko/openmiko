@@ -1,0 +1,35 @@
+#!/bin/sh
+
+
+if [[ -f /etc/openmiko.conf ]]; then
+	. /etc/openmiko.conf
+fi
+
+case "$1" in
+  start)
+
+	if [ "$DISABLE_LEDS" = "1" ]; then
+		logger -s -t led "Disabling LEDs"
+		echo "none" > /sys/class/leds/led_blue/trigger
+		echo "none" > /sys/class/leds/led_yellow/trigger
+	else
+		logger -s -t led "Setting LEDs to default behavior (blue = mmc0, yellow = timer)"
+		echo "mmc0" > /sys/class/leds/led_blue/trigger
+		echo "timer" > /sys/class/leds/led_yellow/trigger
+    fi
+	;;
+  stop)
+	logger -s -t autonight "Stopping LEDs"
+	echo "none" > /sys/class/leds/led_blue/trigger
+	echo "none" > /sys/class/leds/led_yellow/trigger
+	;;
+  restart|reload)
+	"$0" stop
+	"$0" start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?

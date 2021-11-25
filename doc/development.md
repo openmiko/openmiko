@@ -150,9 +150,7 @@ There is an init script that is embedded in the linux kernel inside `initramfs_s
 
 ```
 /src/buildscripts/linux_prebuild_hook.sh
-make rootfs-initramfs
-make linux-rebuild
-make
+make rootfs-initramfs && make linux-rebuild && make
 ```
 
 

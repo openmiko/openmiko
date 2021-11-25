@@ -24,7 +24,7 @@ setup_sdcard_access() {
 	# Current state is /var/log -> ../tmp
 	# At this point /tmp is empty (not sure why)
 	rm /var/log
-	ln -s /sdcard/var/log /var/log	
+	ln -s /sdcard/var/log /var/log
 }
 
 
@@ -51,6 +51,11 @@ else
 fi;
 
 
+OPENMIKO_CONFIG_FILE=/sdcard/config/overlay/etc/openmiko.conf
+if [[ -f $OPENMIKO_CONFIG_FILE ]]; then
+	. $OPENMIKO_CONFIG_FILE
+fi
+
 logger -s -t general_init "Mounting flash partitions"
 
 mkdir -p /config
@@ -61,6 +66,16 @@ then
 	logger -s -t general_init "Error mounting /dev/mtdblock3 on /config"
 	exit 1
 fi
+
+clear_config_partition() {
+	if [[ "$CLEAR_CONFIG_PARTITION" == "1" ]]; then
+		echo "Wiping /config"
+		rm -rf /config/*
+		echo "Wipe complete. Make sure you remove the CLEAR_CONFIG_PARTITION flag."
+	fi	
+}
+clear_config_partition
+
 
 # Should implement an optimization here to check for each file
 # so we don't wear out flash chip

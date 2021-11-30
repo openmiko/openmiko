@@ -15,6 +15,7 @@ case "$1" in
 	# Try to get the Wyze MAC address
 	WIFI_OPTIONS=""
 	if [[ "$USE_WYZE_MAC" -eq "1" ]] && [[ -f "/params/config/.product_config" ]]; then
+        # Transform "NETRELATED_MAC=aabbccddeeffgghh..." into "aa:bb:cc:dd:ee:ff"
 		MAC=$(awk -F= '/NETRELATED_MAC/ {print substr($2, 1, 12)}' /params/config/.product_config | sed 's/\(..\)/\1:/g;s/:$//')
 		logger -s "Using MAC $MAC"
 		WIFI_OPTIONS="rtw_initmac=$MAC"

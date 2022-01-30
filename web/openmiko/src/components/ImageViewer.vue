@@ -40,8 +40,6 @@ export default {
             '',
           ),
         );
-        console.log(base64);
-
         this.imgsrc = "data:image/jpeg;base64," + base64
       })
   },

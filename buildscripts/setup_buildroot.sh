@@ -18,6 +18,8 @@ rm -rf /openmiko/build/buildroot-2016.02/package/mjpg-streamer
 # Old ncurses doesn't support xterm-256color so use updated one
 rm -rf /openmiko/build/buildroot-2016.02/package/ncurses
 
+rm -rf /openmiko/build/buildroot-2016.02/package/lighttpd
+
 
 #cp -r /src/custompackages/package/ffmpeg /openmiko/build/buildroot-2016.02/package/
 cp -r /src/custompackages/package/* /openmiko/build/buildroot-2016.02/package/

@@ -1,4 +1,6 @@
 config BR2_PACKAGE_INGENIC_VIDEOCAP
 	bool "ingenic_videocap"
+	depends on BR2_PACKAGE_SQLITE
 	help
-	  ingenic_videocap
+	  This package provides videocapture and api commands for the camera.	  
+

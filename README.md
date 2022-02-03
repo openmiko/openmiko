@@ -95,11 +95,11 @@ The configuration by default provides 2 output streams:
 - 1920x1080 H264
 - 1920x1080 JPG over HTTP (MJPEG)
 
-The streams can be accessed using the following URLs:
+The streams can be accessed using the following URLs. Please make sure to repalce 'Your_Camera_IP' with the correct IP of your camera:
 
-- rtsp://IP:8554/video3_unicast
-- http://IP:8080/?action=stream
-- http://IP:8080/?action=snapshot
+- rtsp://Your_Camera_IP:8554/video3_unicast
+- http://Your_Camera_IP:8080/?action=stream
+- http://Your_Camera_IP:8080/?action=snapshot
 
 
 ## Settings
@@ -113,7 +113,7 @@ Settings can be changed by editing /etc/videocapture_settings.json. However the 
 	"show_timestamp": 1 		// 1 enables timestamp, 0 disables
 },
 ```
-
+Please refer this file at https://github.com/openmiko/ingenic_videocap/blob/master/settings.json and make changes as necessary. It is suggested to have a copy of this file while you are installing the firmware.
 ### Writing Config Files
 
 On boot it is possible to put files on the sdcard and have them copied permanently to the configuration storage area of the camera.

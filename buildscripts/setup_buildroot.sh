@@ -59,5 +59,7 @@ make savedefconfig BR2_DEFCONFIG=/src/config/ingenic_t20_defconfig
 
 # Start the build process
 cd /openmiko/build/buildroot-2016.02
+
+make sqlite
 make
 

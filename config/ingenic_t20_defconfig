@@ -27,7 +27,9 @@ BR2_ROOTFS_POST_BUILD_SCRIPT="/src/buildscripts/post_fakeroot_script.sh"
 BR2_ROOTFS_POST_IMAGE_SCRIPT="/src/buildscripts/postbuild-hook.sh"
 BR2_LINUX_KERNEL=y
 BR2_LINUX_KERNEL_CUSTOM_TARBALL=y
-BR2_LINUX_KERNEL_CUSTOM_TARBALL_LOCATION="https://raw.githubusercontent.com/openmiko/openmiko/master/kernel_sources/kernel-3.10.14.tar.xz"
+# Use local copy of the kernel instead of downloading it every time
+BR2_LINUX_KERNEL_CUSTOM_TARBALL_LOCATION="file://openmiko/build/buildroot/dl/kernel-3.10.14.tar.xz"
+#BR2_LINUX_KERNEL_CUSTOM_TARBALL_LOCATION="https://raw.githubusercontent.com/openmiko/openmiko/master/kernel_sources/kernel-3.10.14.tar.xz"
 BR2_LINUX_KERNEL_PATCH="/src/patches/kernel"
 BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG=y
 BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="/src/config/linux_minimal_defconfig"

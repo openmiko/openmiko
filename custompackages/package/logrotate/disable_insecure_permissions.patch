@@ -1,0 +1,20 @@
+diff --git a/logrotate.c b/logrotate.c
+index 7da5da5..13eaba1 100644
+--- a/logrotate.c
++++ b/logrotate.c
+@@ -1169,15 +1169,6 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
+ 			return 0;
+ 		}
+ 		/* Don't rotate in directories writable by others or group which is not "root"  */
+-		if ((sb.st_gid != 0 && sb.st_mode & S_IWGRP) || sb.st_mode & S_IWOTH) {
+-			message(MESS_ERROR, "skipping \"%s\" because parent directory has insecure permissions"
+-								" (It's world writable or writable by group which is not \"root\")"
+-								" Set \"su\" directive in config file to tell logrotate which user/group"
+-								" should be used for rotation.\n"
+-								,log->files[logNum]);
+-			free(logpath);
+-			return 1;
+-		}
+ 		free(logpath);
+ 	}
+ 

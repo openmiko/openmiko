@@ -14,7 +14,7 @@ case "$1" in
 		exit 0
 	fi
 	logger -s -t autonight "Starting autonight" 
-	/usr/bin/autonight -v -S -c /usr/bin/nightmode.sh > /var/log/autonight.log 2>&1 &
+	/usr/bin/autonight -v -S -c /usr/bin/nightmode.sh -j 3 -w 3 -1 1200000 -2 930000,14,10 -3 3000,17,8	> /var/log/autonight.log 2>&1 &
 	[ $? == 0 ] && echo "OK" || echo "FAIL"
 	;;
   stop)

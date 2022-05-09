@@ -1,0 +1,20 @@
+This is useful for logrotate to be able to rotate the file even the CLI control
+interface is not enabled (e.g. when using DBus).
+---
+ wpa_supplicant/wpa_supplicant.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/wpa_supplicant/wpa_supplicant.c b/wpa_supplicant/wpa_supplicant.c
+index 9951b0f..493b3a8 100644
+--- a/wpa_supplicant/wpa_supplicant.c
++++ b/wpa_supplicant/wpa_supplicant.c
+@@ -963,6 +963,7 @@ static void wpa_supplicant_reconfig(int sig, void *signal_ctx)
+ 			wpa_supplicant_terminate_proc(global);
+ 		}
+ 	}
++	wpa_debug_reopen_file();
+ }
+
+ 
+-- 
+2.4.3

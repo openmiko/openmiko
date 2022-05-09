@@ -4,8 +4,9 @@
 #
 ################################################################################
 
-MICROPYTHON_VERSION = 1.12
-MICROPYTHON_SITE = $(call github,micropython,micropython,v$(MICROPYTHON_VERSION))
+MICROPYTHON_VERSION = 1f371947309c5ea6023b6d9065415697cbc75578 # 1.12
+MICROPYTHON_SITE = https://github.com/micropython/micropython.git
+MICROPYTHON_SITE_METHOD = git
 MICROPYTHON_LICENSE = MIT
 MICROPYTHON_LICENSE_FILES = LICENSE
 MICROPYTHON_DEPENDENCIES = host-pkgconf libffi $(BR2_PYTHON3_HOST_DEPENDENCY)

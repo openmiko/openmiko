@@ -18,6 +18,12 @@ rm -rf /openmiko/build/buildroot-2016.02/package/mjpg-streamer
 # Old ncurses doesn't support xterm-256color so use updated one
 rm -rf /openmiko/build/buildroot-2016.02/package/ncurses
 
+rm -rf /openmiko/build/buildroot-2016.02/package/lighttpd
+
+rm -rf /openmiko/build/buildroot-2016.02/package/logrotate
+
+rm -rf /openmiko/build/buildroot-2016.02/package/wpa_supplicant
+
 
 #cp -r /src/custompackages/package/ffmpeg /openmiko/build/buildroot-2016.02/package/
 cp -r /src/custompackages/package/* /openmiko/build/buildroot-2016.02/package/
@@ -57,5 +63,7 @@ make savedefconfig BR2_DEFCONFIG=/src/config/ingenic_t20_defconfig
 
 # Start the build process
 cd /openmiko/build/buildroot-2016.02
+
+make sqlite
 make
 

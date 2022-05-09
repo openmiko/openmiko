@@ -12,3 +12,10 @@ BASE_DIR=${BASE_DIR:-/openmiko/build/buildroot-2016.02/output}
 IMAGES="${BASE_DIR}/images"
 HOST_DIR=${HOST_DIR:-/openmiko/build/buildroot-2016.02/output/host}
 TARGET_DIR=${TARGET_DIR:-/openmiko/build/buildroot-2016.02/output/target}
+
+rm -rf "${TARGET_DIR}/lib/modules/3.10.14/kernel/drivers/net/wireless/rtl818x/rtl8188eu"
+
+cd /src
+GIT_REVISION=$(git rev-parse --quiet --short HEAD)
+
+echo $GIT_REVISION > $TARGET_DIR/etc/VERSION

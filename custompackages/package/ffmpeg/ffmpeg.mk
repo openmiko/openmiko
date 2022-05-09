@@ -29,7 +29,7 @@ FFMPEG_CONF_OPTS = \
 	--enable-network \
 	--disable-gray \
 	--enable-swscale-alpha \
-	--disable-small \
+	--enable-small \
 	--enable-dct \
 	--enable-fft \
 	--enable-mdct \

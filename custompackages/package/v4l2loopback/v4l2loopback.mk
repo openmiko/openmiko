@@ -5,7 +5,8 @@
 ################################################################################
 
 V4L2LOOPBACK_VERSION = a6d82287eb734588a11c33e7281671c80c9bf6d7
-V4L2LOOPBACK_SITE = $(call github,umlaeute,v4l2loopback,$(V4L2LOOPBACK_VERSION))
+V4L2LOOPBACK_SITE = https://github.com/umlaeute/v4l2loopback.git
+V4L2LOOPBACK_SITE_METHOD = git
 V4L2LOOPBACK_LICENSE = GPL-2.0+
 V4L2LOOPBACK_LICENSE_FILES = COPYING
 

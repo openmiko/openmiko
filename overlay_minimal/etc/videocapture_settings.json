@@ -1,5 +1,5 @@
 {
-  "comment": "3 encoders (1920x1080 H264, 1920x1080 MJPEG, and 640x80 H264",
+  "comment": "2 encoders (1920x1080 H264, 1920x1080 MJPEG)",
   "general_settings": {
     "flip_vertical": 0,
     "flip_horizontal": 0,
@@ -24,25 +24,6 @@
     "scaling_enable": 1,
     "scaling_width": 1920,
     "scaling_height": 1080,
-    "frame_rate_numerator": 25,
-    "frame_rate_denominator": 1
-  },
-  {
-    "id": 1,
-    "pic_width": 640,
-    "pic_height": 360,
-    "group": 1,
-    "pixel_format": "PIX_FMT_NV12",
-    "buffer_size": 2,
-    "channel_type": "FS_PHY_CHANNEL",
-    "crop_enable": 0,
-    "crop_top": 0,
-    "crop_left": 0,
-    "crop_width": 640,
-    "crop_height": 480,
-    "scaling_enable": 1,
-    "scaling_width": 640,
-    "scaling_height": 360,
     "frame_rate_numerator": 25,
     "frame_rate_denominator": 1
   }],
@@ -109,38 +90,6 @@
       "adaptive_mode": 0,
       "gop_relation": 0
     }
-  },
-  {
-    "channel": 2,
-    "group": 1,
-    "v4l2_device_path": "/dev/video5",
-    "payload_type": "PT_H264",
-    "buffer_size": 0,
-    "profile": 2,
-    "mode": "ENC_RC_MODE_H264VBR",
-    "frame_rate_numerator": 25,
-    "frame_rate_denominator": 1,
-    "max_group_of_pictures": 10,
-    "max_qp": 38,
-    "min_qp": 15,
-    "frame_qp_step": 3,
-    "gop_qp_step": 15,
-    "pic_width": 640,
-    "pic_height": 360,
-
-    "h264vbr_settings": {
-      "statistics_interval": 1,
-      "max_bitrate": 1200,
-      "change_pos": 50
-    },
-    "h264cbr_settings": {
-      "bitrate": 500,
-      "max_fps": 100,
-      "min_fps": 1,
-      "ibiaslvl": 2,
-      "adaptive_mode": 0,
-      "gop_relation": 0
-    }
   }],
   "bindings": [
     {
@@ -167,30 +116,6 @@
         "device": "DEV_ID_ENC",
         "group": 0,
         "output": 0
-      }
-    },
-    {
-      "source": {
-        "device": "DEV_ID_FS",
-        "group": 0,
-        "output": 1
-      },
-      "target": {
-        "device": "DEV_ID_ENC",
-        "group": 1,
-        "output": 1
-      }
-    },
-    {
-      "source": {
-        "device": "DEV_ID_FS",
-        "group": 1,
-        "output": 1
-      },
-      "target": {
-        "device": "DEV_ID_ENC",
-        "group": 1,
-        "output": 2
       }
     }
   ]

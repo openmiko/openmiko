@@ -31,23 +31,22 @@ case "$1" in
 	# https://stackoverflow.com/questions/1251999/how-can-i-replace-a-newline-n-using-sed
 	sed -i ':a;N;$!ba;s/\r//g' "$CONFIGPATH/wpa_supplicant.conf"
 
-	wpa_supplicant -Dnl80211 -i wlan0 -c "$CONFIGPATH/wpa_supplicant.conf" -B
+	wpa_supplicant -Dnl80211 -i wlan0 -c "$CONFIGPATH/wpa_supplicant.conf" -B -d -f /var/log/wpa_supplicant.log
 
 	HOSTNAME=`cat /etc/hostname`
 
 	logger -s "Using hostname: $HOSTNAME"
 	logger -s "Attempting DHCP"
 
-	udhcpc -i wlan0 -b -A 20 -S -x hostname:$HOSTNAME
+	# -i Interface wlan0
+	# -b Background if lease is not obtained
+	# -A 20 Wait if lease is not obtained in 20 seconds
+	# -S Log to syslog
+	# -t 5 Send up to 5 discover packets (default 3)
+	# -n exit if lease is not obtained
 
-	ADDRESS=`ifconfig wlan0 | grep "inet addr:"`
-	while [ -z "$ADDRESS" ]; do
-		logger -s "Waiting for DHCP address"
-		ADDRESS=`ifconfig wlan0 | grep "inet addr:"`
-		sleep 1
-		ifconfig | logger -s
-	done
-
+	udhcpc -i wlan0 -b -A 10 -S -t 6 -n -x hostname:$HOSTNAME
+	ifconfig | logger -s
 
 	;;
   stop)

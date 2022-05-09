@@ -14,10 +14,10 @@ case "$1" in
 		exit 0
 	fi
 	logger -s -t autonight "Starting autonight"
-	if [ -z "$NIGHTMODE_PARAMS" ]; then
-		NIGHTMODE_PARAMS="-j 3 -w 3 -1 1200000 -2 930000,14,10 -3 3000,17,8"
+	if [ -z "$AUTONIGHT_PARAMS" ]; then
+		AUTONIGHT_PARAMS="-j 3 -w 3 -1 1200000 -2 930000,14,10 -3 3000,17,8"
 	fi
-	/usr/bin/autonight -v -S -c /usr/bin/nightmode.sh $NIGHTMODE_PARAMS	> /var/log/autonight.log 2>&1 &
+	/usr/bin/autonight -v -S -c /usr/bin/nightmode.sh $AUTONIGHT_PARAMS	> /var/log/autonight.log 2>&1 &
 	[ $? == 0 ] && echo "OK" || echo "FAIL"
 	;;
   stop)

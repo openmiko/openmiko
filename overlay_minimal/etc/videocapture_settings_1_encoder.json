@@ -1,5 +1,5 @@
 {
-  "comment": "3 encoders (1920x1080 H264)",
+  "comment": "1 encoder (1920x1080 H264)",
   "general_settings": {
     "flip_vertical": 0,
     "flip_horizontal": 0,

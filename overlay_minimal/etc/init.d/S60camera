@@ -3,6 +3,7 @@
 # Start video and camera
 #
 VIDEO_CAPTURE_SETTINGS=/etc/videocapture_settings.json
+ENABLE_AUDIO=0
 
 if [[ -f /etc/openmiko.conf ]]; then
 	. /etc/openmiko.conf

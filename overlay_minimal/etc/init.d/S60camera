@@ -2,14 +2,13 @@
 #
 # Start video and camera
 #
+VIDEO_CAPTURE_SETTINGS=/etc/videocapture_settings.json
 
 if [[ -f /etc/openmiko.conf ]]; then
 	. /etc/openmiko.conf
 fi
 
-case "$1" in
-  start)
-
+start_camera() {
 	AUTH_PARAMS=""
 
 	if [[ -f /etc/v4l2rtspserver.conf ]]; then
@@ -19,7 +18,7 @@ case "$1" in
 		AUTH_PARAMS="-U $USERNAME:$PASSWORD"
 
 		# If we have a realm, add it to AUTH_PARAMS
-		if [[ -v HTTP_AUTH_REALM ]]; then
+		if [ ! -z "$HTTP_AUTH_REALM" ]; then
 			AUTH_PARAMS="-R $HTTP_AUTH_REALM $AUTH_PARAMS"
 		fi
 	fi
@@ -64,19 +63,44 @@ case "$1" in
 	# and v4l2rtspserver and if it doesn't come up properly the camera does not have
 	# rtsp.
 	sleep 1
-	#ffmpeg -fflags +genpts -re -nostats -nostdin -ac 1 -f oss -i /dev/dsp -codec:a copy -f alsa hw:0,0 > /dev/null &
 
-	modprobe v4l2loopback devices=4
+	if [ $ENABLE_AUDIO = "1" ]; then 
+		if ! ps | grep -q '[f]fmpeg -thread_queue_size' ; then
+			echo "Starting FFMPEG audio thread..."
+			ffmpeg -thread_queue_size 256 -fflags +genpts -re -nostats -nostdin -ac 1 -f oss -i /dev/dsp -codec:a copy -f alsa hw:0,0 > /dev/null 2>&1 &
+		else
+			echo "FFMPEG is already running. Skipping."
+		fi
+	else
+		echo "Audio is set to disabled in openmiko.conf. Skipping starting ffmpeg"
+	fi
+
+
+	# Only set the number of v4l2loopback devices that we need. This hopefully will save some memory.
+	DEVICE_COUNT=1 # Default to 1, not sure if this can be 0 or 1.
+	if [ ! -z "$VIDEO_DEV_1" ]; then
+		DEVICE_COUNT="$((DEVICE_COUNT + 1))"
+	fi
+	if [ ! -z "$VIDEO_DEV_2" ]; then
+		DEVICE_COUNT="$((DEVICE_COUNT + 1))"
+	fi
+	if [ ! -z "$VIDEO_DEV_3" ]; then
+		DEVICE_COUNT="$((DEVICE_COUNT + 1))"
+	fi
+
+	echo "Setting up $DEVICE_COUNT v4l2loopback device(s)"
+
+	modprobe v4l2loopback devices=$DEVICE_COUNT
 
 	if ! ps | grep -wq [v]ideocapture; then
 		logger -s "Starting video frame capture process"
-		/usr/bin/videocapture /etc/videocapture_settings.json >> /var/log/videocapture.log 2>&1 &
+		/usr/bin/videocapture $VIDEO_CAPTURE_SETTINGS >> /var/log/videocapture.log 2>&1 &
 		sleep 10
 
         # Wait for the videocapture program to initialize the v4l2 device
         MAX_WAIT=5
         i=0
-        while [[ -e $(fuser /dev/video3) ]]
+        while [[ -e $(fuser $VIDEO_DEV_1) ]]
         do
                 logger -s "Waiting for initialization of v4l2 device"
                 sleep 1
@@ -94,8 +118,29 @@ case "$1" in
 
 	if ! ps | grep -wq [v]4l2rtspserver; then
 		logger -s "Starting v4l2rtspserver"
+		DEVICES=""
+		# Loop through devices to see if they're enabled and add them to rtspserver options
+		if [ ! -z "$VIDEO_DEV_1" ]; then
+			DEVICES="${VIDEO_DEV_1}"
+			if [ "$ENABLE_AUDIO" == 1 ]; then
+				DEVICES="${DEVICES},hw:0,1"
+			fi
+		fi
+		if [ ! -z "$VIDEO_DEV_2" ]; then
+			DEVICES="${DEVICES} ${VIDEO_DEV_2}"
+			if [ "$ENABLE_AUDIO" == 1 ]; then
+				DEVICES="${DEVICES},hw:0,1"
+			fi
+		fi
+		if [ ! -z "$VIDEO_DEV_3" ]; then
+			DEVICES="${DEVICES} ${VIDEO_DEV_3}"
+			if [ "$ENABLE_AUDIO" == 1 ]; then
+				DEVICES="${DEVICES},hw:0,1"
+			fi
+		fi
 		#/usr/bin/v4l2rtspserver $AUTH_PARAMS -l 1 -A 48000 -C 1 -a S16_LE /dev/video3,hw:0,1 /dev/video4 > /dev/null &
-		/usr/bin/v4l2rtspserver $AUTH_PARAMS -A 48000 -C 1 -a S16_LE -l 1 /dev/video3,hw:0,1 /dev/video5 > /dev/null &
+		# /usr/bin/v4l2rtspserver $AUTH_PARAMS -A 48000 -C 1 -a S16_LE -l 1 $DEVICES >> /var/log/v4l2rtspserver.log 2>&1 &
+		/usr/bin/v4l2rtspserver $AUTH_PARAMS -A 48000 -C 1 -a S16_LE -l 1 $DEVICES > /dev/null & #> /var/log/v4l2rtspserver.log 2>&1 &
 	fi
 
 	# Waiting for v4l2rtpserver to start
@@ -113,14 +158,25 @@ case "$1" in
 		echo $FFMPEG_CMD
 		$FFMPEG_CMD > /dev/null 2>&1 &
 	fi
+}
 
+case "$1" in
+	start)
+	start_camera
 
 	;;
   stop)
 	killall videocapture
 	killall v4l2rtspserver
+	killall ffmpeg
 	;;
   restart|reload)
+
+	killall videocapture
+	killall v4l2rtspserver
+	killall ffmpeg
+
+	start_camera
 	;;
   *)
 	echo "Usage: $0 {start|stop|restart}"

@@ -18,19 +18,25 @@ case "$1" in
 
  	echo "Starting swap on sdcard using $SWAPFILE"
 
-	# Check if sdcard is mounted
-	mountpoint -q /sdcard
-	if [[ "$?"  -ne 0 ]]; then
-		echo "/sdcard is not mounted or swap already running"
-		exit 0
-	fi
+	## Check if we have a dedicated partition or a file on sd card
+	if echo $SWAPFILE | grep -qw /sdcard; then 
+		echo "swap is on /sdcard";
+		# Check if sdcard is mounted
+		mountpoint -q /sdcard
+		if [[ "$?"  -ne 0 ]]; then
+			echo "/sdcard is not mounted or swap already running"
+			exit 0
+		fi
 
-	# TODO: Check if the sdcard has space
+		# TODO: Check if the sdcard has space
 
-	# Check if swap is enabled
-	if [[ ! -f "/sdcard/swapfile" ]]; then
-		echo "Creating $SWAPFILE"
-		dd if=/dev/zero of=$SWAPFILE bs=4K count=16K
+		# Check if swap is enabled
+		if [[ ! -f "$SWAPFILE" ]]; then
+			echo "Creating $SWAPFILE"
+			dd if=/dev/zero of=$SWAPFILE bs=4K count=16K
+		fi
+	else
+		echo "swap is on partition $SWAPFILE"
 	fi
 
 	mkswap $SWAPFILE

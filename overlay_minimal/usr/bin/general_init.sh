@@ -4,6 +4,15 @@ set -x
 . /usr/bin/libgpio.sh
 gpio_select_gpiochip 0
 
+SD_PARTITION=/dev/mmcblk0p1
+SD_FILESYSTEM=vfat
+if [[ -f /etc/openmiko.conf ]]; then
+	. /etc/openmiko.conf
+
+elif [[ -f /config/overlay/etc/openmiko.conf ]]; then
+	. /config/overlay/etc/openmiko.conf
+fi
+
 
 # /etc/dropbear is a symbolic link to /var/run/dropbear
 # Remove it so overlays in that directory will work
@@ -14,7 +23,8 @@ logger -s -t general_init "Setting up SDCard access"
 
 setup_sdcard_access() {
 	mkdir -p /sdcard
-	mount -t vfat /dev/mmcblk0p1 /sdcard -o rw,umask=0000,dmask=0000
+	# mount -t vfat $SD_PARTITION /sdcard -o rw,umask=0000,dmask=0000
+	mount -t $SD_FILESYSTEM $SD_PARTITION /sdcard -o rw
 	sleep 1
 	echo "Mount /sdcard successful"
 
@@ -33,7 +43,7 @@ setup_sdcard_access() {
 # to export pin 43. However on WyzeCams you need to export 43
 # for the mmc devices to show up
 
-if [ -e /dev/mmcblk0p1 ]; then
+if [ -e $SD_PARTITION ]; then
 	setup_sdcard_access
 else
 	# If the device doesn't exist then either the sdcard is not present or we need to export the pin
@@ -42,7 +52,7 @@ else
 	sleep 3
 
 	# If after exporting the device exists then setup
-	if [ -e /dev/mmcblk0p1 ]; then
+	if [ -e $SD_PARTITION ]; then
 		setup_sdcard_access
 	else
 		# If it still doesn't exist then unexport and continue

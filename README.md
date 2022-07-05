@@ -56,6 +56,8 @@ If you have a classic XiaoFang with a ARM-Processor, consider using https://gith
 
 Before installing OpenMiko, we suggest you carefully read the [FAQ](/doc/faq.md).
 
+Prepare an sd-card with two partitions. The first partition on the device must be a vfat partition. It will only contain some small scripts so 100MiB should be more than enough. The second partition must be an ext2 partition and will contain all other files.
+
 Download the specific version of the firmware you wish to install. The releases can be found on the right hand side in Github under the label "Releases".
 
 [![Releases](doc/img/releases.png)](https://github.com/openmiko/openmiko/releases)

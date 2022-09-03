@@ -1,9 +1,10 @@
 # Development
 
+Ensure you have the git submodules pulled with `git submodule update --init --recursive`.
 
-To setup the development environment run `docker-compose up -d` to automatically pull down a container with buildroot.
+To start the development environment run `docker-compose up -d` to automatically pull down a container with buildroot.
 
-You can also run `docker pull openmiko/openmiko:latest` to get the latest container. 
+You can also run `docker pull openmiko/openmiko:latest` to get the latest container.
 
 The container image is about 8GB. The reason for this is because the artifacts are all baked in.
 This reduces the amount of time needed to get up and running.
@@ -14,7 +15,7 @@ Once you have the container up and running you can shell into it using:
 `docker-compose exec builder bash`
 
 To build the firmware change you directory to:
-`/openmiko/build/buildroot-2016.02` and run `make`.
+`/openmiko/build/buildroot-2016.02`, run `make ingenic_videocap-rebuild` once to build the submodule and run `make` after any new changes to the firmware.
 
 This should output something like the following:
 
@@ -38,7 +39,7 @@ RootFS ==> /openmiko/build/buildroot-2016.02/output/images/rootfs.tar.xz (846682
 
 The development loop refers to the process of changing a piece of code and running it on the hardware.
 
-Running `make` will bundle up `output/target` as the root filesystem and run the script `buildscripts/postbuild-hook.sh` to create the release. Putting this demo.bin on an sdcard and moving it over is one method of loading it up. Another way is to flash the rootfs or kernel directly using an mtd partition. However this would involve scp'ing it over to the camera provided it is already up and running.
+Running `make` will bundle up `output/target` as the root filesystem and run the script `buildscripts/postbuild-hook.sh` to create the release. You can copy the `demo.bin` from the container with `docker cp openmiko_builder_1:/src/release/demo.bin .`. Putting this `demo.bin` on an sdcard and moving it over is one method of loading it up. Another way is to flash the rootfs or kernel directly using an mtd partition. However this would involve scp'ing it over to the camera provided it is already up and running.
 
 
 Buildroot has a number of packages out of the box. Run `make menuconfig` and use the graphically interface to select a package. Afterwards you can run `make` and it will build it. You can also run `make-<packagename>` to rebuild that specific package.
@@ -49,7 +50,7 @@ Keep in mind space is a concern and the rootfs and kernel can only be a certain 
 
 Custom code is pulled into the project via git submodules.
 
-After pulling down the submodules with `submodule update --init --recursive` you should run `make ingenic_videocap-rebuild`.
+After pulling down the submodules with `git submodule update --init --recursive` you should run `make ingenic_videocap-rebuild`.
 
 
 The normal operation of Buildroot is to download a tarball, extract it, configure, compile and install the software component found inside this tarball. It pulls this from the package mk file. However when you are developing you want to use the local code in `/src`. There is a file called `local.mk` that is used to override it.

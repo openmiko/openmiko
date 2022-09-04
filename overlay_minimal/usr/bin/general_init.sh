@@ -13,6 +13,10 @@ elif [[ -f /config/overlay/etc/openmiko.conf ]]; then
 	. /config/overlay/etc/openmiko.conf
 fi
 
+FSCK_FLAGS="-p"
+if [[ "$SD_FILESYSTEM" == "vfat" ]]; then
+	FSCK_FLAGS="-p -w"
+fi
 
 # /etc/dropbear is a symbolic link to /var/run/dropbear
 # Remove it so overlays in that directory will work
@@ -22,6 +26,10 @@ mkdir -p /etc/dropbear
 logger -s -t general_init "Setting up SDCard access"
 
 setup_sdcard_access() {
+	if command -V fsck.$SD_FILESYSTEM > /dev/null; then
+		fsck -t $SD_FILESYSTEM $FSCK_FLAGS $SD_PARTITION
+	fi
+
 	mkdir -p /sdcard
 	# mount -t vfat $SD_PARTITION /sdcard -o rw,umask=0000,dmask=0000
 	mount -t $SD_FILESYSTEM $SD_PARTITION /sdcard -o rw

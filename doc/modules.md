@@ -9,7 +9,7 @@ The module system has no built-in approach to ensuring modules are compatible wi
 ## Module list
 
 | Name | Description |
-| --- | --- | --- |
+| --- | --- |
 | [ddns](https://github.com/martinbutt/openmiko-module-ddns) | Adds ddclient for dynamic DNS |
 | [fsck.vfat](https://github.com/martinbutt/openmiko-module-fsck-vfat) | Adds fsck.vfat for checking FAT partitions on the SD card |
 | [fsck.ext](https://github.com/martinbutt/openmiko-module-fsck-ext) | Adds e2fsck for checking ext2/3/4 partitions on the SD card |

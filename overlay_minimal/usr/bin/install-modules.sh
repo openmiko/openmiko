@@ -21,9 +21,10 @@ then
 			pushd "$MODULE_NAME"
 			xz -d < "$MODULE" | tar x
 
-			if [ -x "preinstall.sh" ]; then
-				./preinstall.sh
-				rm -f preinstall.sh
+			if [ -f "pre-install.sh" ]; then
+				chmod 755 pre-install.sh
+				./pre-install.sh
+				rm -f pre-install.sh
 			fi
 
 			if [ -d "overlay" ]; then
@@ -31,14 +32,15 @@ then
 				rm -rf overlay
 			fi
 
-			if [ -x "postinstall.sh" ]; then
-				./postinstall.sh
-				rm -f postinstall.sh
+			if [ -f "post-install.sh" ]; then
+				chmod 755 post-install.sh
+				./post-install.sh
+				rm -f post-install.sh
 			fi
 
 			popd
 
-			rm -f "/etc/openmiko.d/modules/$MODULE/$MODULE_NAME.tar.xz"
+			rm -f "/etc/openmiko.d/modules/$MODULE_NAME/$MODULE_NAME.tar.xz"
 		fi
 	done
 

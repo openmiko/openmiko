@@ -15,13 +15,15 @@ then
 		if [ -f "$MODULE" ]; then
 			MODULE_NAME=`basename $MODULE .tar.xz`
 			logger -s -t general_init "Installing module $MODULE_NAME"
-			cp "$MODULE" /etc/openmiko.d/modules/
-			xz -d < "$MODULE" | tar x
-			pushd "$MODULE_NAME"
 
-			if [ -x "pre-install.sh" ]; then
-				./pre-install.sh
-				rm -f pre-install.sh
+			mkdir -p /etc/openmiko.d/modules/$MODULE_NAME
+			cp "$MODULE" /etc/openmiko.d/modules/$MODULE_NAME
+			pushd "$MODULE_NAME"
+			xz -d < "$MODULE" | tar x
+
+			if [ -x "preinstall.sh" ]; then
+				./preinstall.sh
+				rm -f preinstall.sh
 			fi
 
 			if [ -d "overlay" ]; then
@@ -29,14 +31,14 @@ then
 				rm -rf overlay
 			fi
 
-			if [ -x "post-install.sh" ]; then
-				./post-install.sh
-				rm -f post-install.sh
+			if [ -x "postinstall.sh" ]; then
+				./postinstall.sh
+				rm -f postinstall.sh
 			fi
 
 			popd
 
-			rm -f "/etc/openmiko.d/modules/$MODULE_NAME.tar.xz"
+			rm -f "/etc/openmiko.d/modules/$MODULE/$MODULE_NAME.tar.xz"
 		fi
 	done
 

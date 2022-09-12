@@ -128,6 +128,11 @@ def cameraimage(req, resp):
         yield from resp.awrite("--boundarydonotcross\r\n")
         time.sleep(1)
 
+def reboot(req, resp):
+    os.system("/sbin/reboot")
+
+def poweroff(req, resp):
+    os.system("/sbin/poweroff")
 
 # def hello(req, resp):
 #     yield from picoweb.start_response(resp)
@@ -141,6 +146,8 @@ ROUTES = [
     ("/api/cameraimage", cameraimage),
     ("/api/ir_cut", ir_cut),
     ("/api/ir_led", ir_led),
+    ("/api/reboot", reboot),
+    ("/api/poweroff", poweroff),
 ]
 
 

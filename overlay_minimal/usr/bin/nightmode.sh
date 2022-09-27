@@ -2,6 +2,10 @@
 
 NIGHTVISION_FILE="/tmp/night_vision_enabled"
 
+if [[ -f /etc/openmiko.conf ]]; then
+	. /etc/openmiko.conf
+fi
+
 . /usr/bin/libgpio.sh
 
 gpio_select_gpiochip 0
@@ -39,18 +43,20 @@ ir_cut() {
 }
 
 case $1 in
-  on)
-    echo "$(date) - nightmode on"
-		ir_led on
-		ir_cut off
-    echo "1" > $NIGHTVISION_FILE
-    ;;
-  off)
-    echo "$(date) - nightmode off"
+	on)
+		echo "$(date) - nightmode on"
+		if [ "$DISABLE_LEDS" == "0" ]; then
+			ir_led on
+			ir_cut off
+		fi
+		echo "1" > $NIGHTVISION_FILE
+		;;
+	off)
+		echo "$(date) - nightmode off"
 		ir_led off
 		ir_cut on
-    echo "0" > $NIGHTVISION_FILE
-    ;;
-  *)
-    ;;
+		echo "0" > $NIGHTVISION_FILE
+		;;
+	*)
+		;;
 esac

@@ -72,21 +72,27 @@ Hold the setup button, plug in your USB cable, keep holding the setup button for
 After about 30 seconds you should get a flashing yellow LED which indicates the camera is working.
 
 
-## Setting up the wifi
+## Setting up Wi-Fi
 
-Wifi configuration is done via the sdcard.
+Wi-Fi configuration is done via the sdcard.
 
 On the sdcard create the directories `/config/overlay/etc`:
 
 ![Overlay Filesystem](doc/img/overlay_filesystem.png)
 
-In the `etc` directory copy the file [`wpa_supplicant.conf`](https://github.com/openmiko/openmiko/blob/master/overlay_minimal/etc/wpa_supplicant.conf). Edit this file and plug in your wifi name and password.
+In the `etc` directory copy the file [`wpa_supplicant.conf`](https://github.com/openmiko/openmiko/blob/master/overlay_minimal/etc/wpa_supplicant.conf). Edit this file and plug in your Wi-Fi name and password.
 
 Insert the sdcard into the camera and reboot. OpenMiko will copy this directory over to the `/config` partition (which is persistent flash storage). This method can also be used to overwrite other files. For example:
 
 
 - `/etc/passwd` and `/etc/shadow` can be overwritten to make sure password changes are persistent
 - `/config/overlay/etc/dropbear/dropbear_ecdsa_host_key` can be used to have a persistent SSH signature
+
+### Wi-Fi Module Configuration to get WyzeCam Pan and Dafang working
+
+WyzeCam Pan or Dafang cameras need a different Wi-Fi module configured rather than the stock Wi-Fi module. If this change is not made, your camera won't connect to Wi-Fi. This change is made using the `openmiko.conf` config file that resides in `/config/overlay/etc`. 
+
+Per above, you should have already created the `/config/overlay/etc` directory when creating the `wpa_supplicant.conf` file to configure Wi-Fi. Create another file in the same place named `openmiko.conf`. Copy the minimal config from https://github.com/openmiko/openmiko/blob/master/overlay_minimal/etc/openmiko.conf and change the line that says `WIFI_MODULE=8189fs` to `WIFI_MODULE=8189es`. 
 
 ## Usage
 

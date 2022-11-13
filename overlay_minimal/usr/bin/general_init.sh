@@ -20,8 +20,8 @@ function run_fsck() {
   FSCK_FLAGS="-p"
   if [[ "$SD_FILESYSTEM" == "vfat" ]]; then
 	  FSCK_FLAGS="-p -w"
-  elif [[ "$SD_FILESYSTEM" == "vfat" ]]; then
-	  FSCK_FLAGS="-p -w"
+  elif [[ "$SD_FILESYSTEM" == "exfat" ]]; then
+	  FSCK_FLAGS=""
   fi
 
   logger -s -t general_init "Attempting fsck.$SD_FILESYSTEM"

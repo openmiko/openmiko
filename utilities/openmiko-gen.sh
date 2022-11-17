@@ -25,9 +25,9 @@ while [[ ${DETAILS_CORRECT} != [yY] ]]; do
 
   echo ""
 
-  echo "Select Camera Type:"
-  echo "0) Wyze V2"
-  echo "1) Wyze V2 Pan or Dafang"
+  echo "Select Wifi Module:"
+  echo "0) 8189fs (Wyze V2)"
+  echo "1) 8189es (Wyze V2 Pan or Dafang)"
 
   while [[ ${CAM_TYPE} != [01] ]]; do
     read -n1 -rp "Enter 0 or 1: " CAM_TYPE

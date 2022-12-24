@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 unset -f is_positive_integer    >/dev/null 2>&1
 unset -f gpio_select_gpiochip   >/dev/null 2>&1

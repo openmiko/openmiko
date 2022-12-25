@@ -146,7 +146,10 @@ mkdir -p /newroot
 # Setup zram root file system. Use 4K blocks because zram
 # does not include any option to control block size. It is hard-coded.
 
-echo 48M > /sys/block/zram0/disksize
+#echo 48M > /sys/block/zram0/disksize
+#reducing the zram0 size to leave more ram for applications
+echo 40M > /sys/block/zram0/disksize
+
 busybox mke2fs /dev/zram0 -b 4096
 mount /dev/zram0 /newroot
 
@@ -222,6 +225,11 @@ then
 fi
 
 umount /jffsroot
+
+#unmount sdcard if mounted
+if [ -e /dev/mmcblk0p1 ]; then
+  umount /sdcard
+fi
 
 rm -rf /newroot/dev
 rm -rf /newroot/sys

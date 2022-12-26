@@ -9,6 +9,10 @@ case "$1" in
 
 	gpio_export '25'
 	gpio_export '26'
+        gpio_export '49' # IR LED
+	gpio_direction_output '25'
+	gpio_direction_output '26'
+	gpio_direction_output '49'
 
 	# Turn on power to USB port (needed for older FCC IDs 2ANJHWYZEC02)
 	gpio_export '47'

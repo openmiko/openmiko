@@ -86,7 +86,11 @@ start_camera() {
 
 	if ! ps | grep -wq [v]ideocapture; then
 		logger -s "Starting video frame capture process"
-		/usr/bin/videocapture $VIDEO_CAPTURE_SETTINGS >> /var/log/videocapture.log 2>&1 &
+		if [ "$ENABLE_LOGGING" == "1" ]; then
+			/usr/bin/videocapture $VIDEO_CAPTURE_SETTINGS >> /var/log/videocapture.log 2>&1 &
+		else
+			/usr/bin/videocapture $VIDEO_CAPTURE_SETTINGS > /dev/null 2>&1 &
+		fi
 		sleep 10
 
         # Wait for the videocapture program to initialize the v4l2 device

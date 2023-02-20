@@ -1,10 +1,21 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Starts lighttpd.
 #
 
+. /etc/openmiko.conf
+
 start() {
 	printf "Starting lighttpd: "
+
+	if [ "$ENABLE_LOGGING" == "1" ]; then
+		cp /etc/lighttpd/conf.d/access_log.conf.enabled /etc/lighttpd/conf.d/access_log.conf
+		cp /etc/lighttpd/conf.d/error_log.conf.enabled /etc/lighttpd/conf.d/error_log.conf
+	else
+		echo "" > /etc/lighttpd/conf.d/access_log.conf
+		echo "" > /etc/lighttpd/conf.d/error_log.conf
+	fi
+
 	start-stop-daemon -S -q -p /var/run/lighttpd.pid --exec /usr/sbin/lighttpd -- -f /etc/lighttpd/lighttpd.conf
 	echo "OK"
 }
@@ -34,4 +45,3 @@ case "$1" in
 esac
 
 exit $?
-

@@ -31,10 +31,12 @@ setup_sdcard_access() {
 	# Write log files to the sdcard
 	mkdir -p /sdcard/var/log
 
-	# Current state is /var/log -> ../tmp
-	# At this point /tmp is empty (not sure why)
-	rm /var/log
-	ln -s /sdcard/var/log /var/log
+	if [ "$ENABLE_LOGGING" == "1" ]; then
+		# Current state is /var/log -> ../tmp
+		# At this point /tmp is empty (not sure why)
+		rm /var/log
+		ln -s /sdcard/var/log /var/log
+	fi
 }
 
 

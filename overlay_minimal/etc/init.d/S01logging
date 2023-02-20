@@ -1,10 +1,25 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Start logging
 #
 
+. /etc/openmiko.conf
+
 start() {
 	printf "Starting logging: "
+
+	if [ "$ENABLE_LOGGING" == "0" ]; then
+		mv /etc/logrotate.d/autonight.conf /etc/logrotate.d/autonight.conf~ || true
+		mv /etc/logrotate.d/lighttpd.conf /etc/logrotate.d/lighttpd.conf~ || true
+		mv /etc/logrotate.d/videocapture.conf /etc/logrotate.d/videocapture.conf~ || true
+		mv /etc/logrotate.d/wpa_supplicant.conf /etc/logrotate.d/wpa_supplicant.conf~ || true
+	else
+		mv /etc/logrotate.d/autonight.conf~ /etc/logrotate.d/autonight.conf || true
+		mv /etc/logrotate.d/lighttpd.conf~ /etc/logrotate.d/lighttpd.conf || true
+		mv /etc/logrotate.d/videocapture.conf~ /etc/logrotate.d/videocapture.conf || true
+		mv /etc/logrotate.d/wpa_supplicant.conf~ /etc/logrotate.d/wpa_supplicant.conf || true
+	fi
+
 	start-stop-daemon -b -S -q -m -p /var/run/syslogd.pid --exec /sbin/syslogd -- -n
 	start-stop-daemon -b -S -q -m -p /var/run/klogd.pid --exec /sbin/klogd -- -n
 	echo "OK"

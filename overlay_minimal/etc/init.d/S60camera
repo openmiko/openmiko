@@ -42,16 +42,7 @@ start_camera() {
 	fi
 
 	# Turn on the infared cutoff filter (normal light operation)
-	. /usr/bin/libgpio.sh
-
-	gpio_select_gpiochip 0
-	gpio_direction_output 25
-	gpio_direction_output 26
-
-	gpio_set_value 25 0
-	gpio_set_value 26 1
-	sleep 1
-	gpio_set_value 26 0
+	/usr/bin/nightmode.sh off
 
 	# For some reason if I load the v4l2rtspserver with live555 before
 	# loading the ALSA loopback module userspace can't seem to see

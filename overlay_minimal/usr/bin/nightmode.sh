@@ -2,20 +2,61 @@
 
 NIGHTVISION_FILE="/tmp/night_vision_enabled"
 
-case $1 in
-  on)
-    echo "$(date) - nightmode on"
-    curl -d value=0 http://127.0.0.1:8081/api/ir_cut 2>/dev/null
-    curl -d value=1 http://127.0.0.1:8081/api/ir_led 2>/dev/null
-    echo "1" > $NIGHTVISION_FILE
-    ;;
-  off)
-    echo "$(date) - nightmode off"
-    curl -d value=1 http://127.0.0.1:8081/api/ir_cut 2>/dev/null
-    curl -d value=0 http://127.0.0.1:8081/api/ir_led 2>/dev/null
-    echo "0" > $NIGHTVISION_FILE
-    ;;
-  *)
-    ;;
-esac
+if [[ -f /etc/openmiko.conf ]]; then
+	. /etc/openmiko.conf
+fi
 
+. /usr/bin/libgpio.sh
+
+gpio_select_gpiochip 0
+
+gpio_direction_output 25
+gpio_direction_output 26
+gpio_direction_output 49
+
+ir_led() {
+	case "$1" in
+	on)
+		gpio_set_value 49 1
+	;;
+	off)
+		gpio_set_value 49 0
+	;;
+	esac
+}
+
+ir_cut() {
+	case "$1" in
+	on)
+		gpio_set_value 25 0
+		gpio_set_value 26 1
+		sleep 1
+		gpio_set_value 26 0
+	;;
+	off)
+		gpio_set_value 26 0
+		gpio_set_value 25 1
+		sleep 1
+		gpio_set_value 25 0
+	;;
+	esac
+}
+
+case $1 in
+	on)
+		echo "$(date) - nightmode on"
+		if [ "$DISABLE_LEDS" == "0" ]; then
+			ir_led on
+			ir_cut off
+		fi
+		echo "1" > $NIGHTVISION_FILE
+		;;
+	off)
+		echo "$(date) - nightmode off"
+		ir_led off
+		ir_cut on
+		echo "0" > $NIGHTVISION_FILE
+		;;
+	*)
+		;;
+esac

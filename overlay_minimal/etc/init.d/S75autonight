@@ -14,16 +14,6 @@ case "$1" in
 		exit 0
 	fi
 	logger -s -t autonight "Starting autonight"
-
-	. /usr/bin/libgpio.sh
-	gpio_select_gpiochip 0
-
-	for pin in 38 39 49; do
-		gpio_export $pin
-		gpio_direction_output $pin
-		gpio_set_active_low $pin 0
-	done
-
 	if [ -z "$AUTONIGHT_PARAMS" ]; then
 		AUTONIGHT_PARAMS="-j 3 -w 3 -1 1200000 -2 930000,14,10 -3 3000,17,8"
 	fi

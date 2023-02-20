@@ -6,6 +6,8 @@ gpio_select_gpiochip 0
 
 SD_PARTITION=/dev/mmcblk0p1
 SD_FILESYSTEM=vfat
+FILESYSTEMS=(vfat exfat ext4 ext3 ext2 ext4dev)
+
 if [[ -f /etc/openmiko.conf ]]; then
 	. /etc/openmiko.conf
 
@@ -13,6 +15,74 @@ elif [[ -f /config/overlay/etc/openmiko.conf ]]; then
 	. /config/overlay/etc/openmiko.conf
 fi
 
+function run_fsck() {
+  local SD_FILESYSTEM=$1
+  FSCK_FLAGS="-p"
+  if [[ "$SD_FILESYSTEM" == "vfat" ]]; then
+	  FSCK_FLAGS="-p -w"
+  elif [[ "$SD_FILESYSTEM" == "exfat" ]]; then
+	  FSCK_FLAGS=""
+  fi
+
+  logger -s -t general_init "Attempting fsck.$SD_FILESYSTEM"
+
+	if command -V fsck."$SD_FILESYSTEM" > /dev/null; then
+    fsck -t "$SD_FILESYSTEM" $FSCK_FLAGS "$SD_PARTITION"
+    local RETURN_CODE=$?
+    logger -s -t general_init "fsck.$SD_FILESYSTEM returned $RETURN_CODE"
+    return $RETURN_CODE
+	fi
+
+  logger -s -t general_init "fsck.$SD_FILESYSTEM not found"
+	return 1
+}
+
+function try_fscks() {
+  local SD_FILESYSTEM=$1
+  run_fsck "$SD_FILESYSTEM"
+  local RETURN_CODE=$?
+
+  while [ $RETURN_CODE -ne 0 ] && [ ${#FILESYSTEMS[@]} -ne 0 ]; do
+    NEW_FILESYSTEMS=()
+
+    for FILESYSTEM in "${FILESYSTEMS[@]}"; do
+      [[ $FILESYSTEM != $SD_FILESYSTEM ]] && NEW_FILESYSTEMS+=($FILESYSTEM)
+    done
+
+    FILESYSTEMS=("${NEW_FILESYSTEMS[@]}")
+    unset NEW_FILESYSTEMS
+
+    SD_FILESYSTEM="${FILESYSTEMS[0]}"
+    run_fsck "$SD_FILESYSTEM"
+    RETURN_CODE=$?
+  done
+  
+  return $RETURN_CODE
+}
+
+function get_next_filesystem() {
+  local LAST_FILESYSTEM=$1
+  NEW_FILESYSTEMS=()
+
+  for FILESYSTEM in "${FILESYSTEMS[@]}"; do
+    [[ $FILESYSTEM != $LAST_FILESYSTEM ]] && NEW_FILESYSTEMS+=($FILESYSTEM)
+  done
+
+  FILESYSTEMS=("${NEW_FILESYSTEMS[@]}")
+  unset NEW_FILESYSTEMS
+
+  echo "${FILESYSTEMS[0]}"
+}
+
+function mount_sdcard() {
+    # Attempting filesystem defined in config
+    if ! mount -t "$SD_FILESYSTEM" "$SD_PARTITION" /sdcard -o rw; then
+      # Attempt to auto-detect filesystem
+  	  if ! mount "$SD_PARTITION" /sdcard -o rw; then
+  	    return 1
+  	  fi
+    fi
+}
 
 # /etc/dropbear is a symbolic link to /var/run/dropbear
 # Remove it so overlays in that directory will work
@@ -22,11 +92,20 @@ mkdir -p /etc/dropbear
 logger -s -t general_init "Setting up SDCard access"
 
 setup_sdcard_access() {
+
+  if ! try_fscks "$SD_FILESYSTEM"; then
+    logger -s -t general_init "fsck failed"
+  fi
+
 	mkdir -p /sdcard
-	# mount -t vfat $SD_PARTITION /sdcard -o rw,umask=0000,dmask=0000
-	mount -t $SD_FILESYSTEM $SD_PARTITION /sdcard -o rw
-	sleep 1
-	echo "Mount /sdcard successful"
+
+  if mount_sdcard; then
+    logger -s -t general_init "mount /sdcard successful"
+	else
+    logger -s -t general_init "mount /sdcard failed"
+  fi
+
+  sleep 1
 
 	# Write log files to the sdcard
 	mkdir -p /sdcard/var/log

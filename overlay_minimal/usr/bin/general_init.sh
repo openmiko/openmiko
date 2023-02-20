@@ -86,6 +86,10 @@ clear_config_partition() {
 }
 clear_config_partition
 
+if [ -d "/sdcard/modules" ]
+then
+	. /usr/bin/install-modules.sh
+fi
 
 # Should implement an optimization here to check for each file
 # so we don't wear out flash chip

@@ -171,4 +171,4 @@ Please provide as much context as possible:
 
 ## Contributing
 
-Pull requests are welcome. For fixes of code and documentation, please go ahead and submit a pull request.
+Pull requests are welcome. For fixes of code and documentation, please go ahead and submit a pull request. Information on setting up your development envirment can be found [here](doc/development.md).

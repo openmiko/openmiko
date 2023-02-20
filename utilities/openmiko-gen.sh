@@ -99,6 +99,8 @@ VIDEO_DEV_3=/dev/video5
 WIFI_MODULE=${WIFI_MODULE}
 # Disables LEDs on the camera
 DISABLE_LEDS=$((ENABLE_LEDS ^ 1))
+# Enable Logging
+ENABLE_LOGGING=0
 EOF
 
 echo "${OUTPUT_DIRECTORY}/openmiko.conf generated"

@@ -144,6 +144,8 @@ fi;
 
 OPENMIKO_CONFIG_FILE=/sdcard/config/overlay/etc/openmiko.conf
 if [[ -f $OPENMIKO_CONFIG_FILE ]]; then
+	# Ensure UNIX-style line endings
+	sed -i ':a;N;$!ba;s/\r//g' "$OPENMIKO_CONFIG_FILE"
 	. $OPENMIKO_CONFIG_FILE
 fi
 

@@ -7,6 +7,6 @@
 # *  *  *  *  *  command to be executed
 # *  *  *  *  *  command --arg1 --arg2 file1 file2 2>&1
 
-*/15 * * * * /usr/sbin/logrotate /etc/logrotate.conf
+*/15 * * * * . openmiko.conf && [ "$ENABLE_LOGGING" == "1" ] && /usr/sbin/logrotate /etc/logrotate.conf
 
 

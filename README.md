@@ -3,7 +3,7 @@
 OpenMiko is custom opensource firmware for cameras that use the Ingenic T20 chip.
 These cameras include the Wyzecam V2 and Xiaomi Xiaofang.
 
-The firmware aims to provide an an alternative to the closed source out of box firmwares which can often be riddled with bugs and security holes. Privacy is also a concern as it is difficult to tell if out of box firmware reaches out to other servers or is broadcasting metadata.
+The firmware aims to provide an alternative to the closed source out of box firmwares which can often be riddled with bugs and security holes. Privacy is also a concern as it is difficult to tell if out of box firmware reaches out to other servers or is broadcasting metadata.
 
 ## Features
 
@@ -18,10 +18,10 @@ The firmware aims to provide an an alternative to the closed source out of box f
 ## Differences between this project and DaFang Hacks / OpenFang
 
 This project is focused on providing a better foundation for developers and end users.
-At the time of this project OpenFang was relatively quiet. DaFang Hacks has some activity
-but I felt the way it was made was not necesssarily conducive to developing on a solid platform.
+At the time of this project OpenFang was relatively quiet. DaFang Hacks has some activity,
+but I felt the way it was made was not necessarily conducive to developing on a solid platform.
 
-This project generously uses the code from both projects and it is much appreciated.
+This project generously uses the code from both projects, and it is much appreciated.
 
 A few of the quality of life improvements in this project aimed at developers:
 
@@ -48,15 +48,15 @@ Ingenic T20X (128Mb DDR) | &nbsp;
 ![Wyze Cam v2](doc/wyzecam_v2/img/wyzecam_v2.jpg) Wyze Cam V2 | 
 ![Xiaomi Dafang](doc/xiaomi_dafang/img/xiaomi_dafang.jpg) Xiaomi Dafang | ![Wyze Cam Pan](doc/WYZECP1/img/wyzecam_pan.jpg) Wyze Cam Pan
 
-If you have a device with a Ingenic T10 SOC, consider using for now https://github.com/EliasKotlyar/Xiaomi-Dafang-Hacks
+If you have a device with an Ingenic T10 SOC, consider using for now https://github.com/EliasKotlyar/Xiaomi-Dafang-Hacks
 
-If you have a classic XiaoFang with a ARM-Processor, consider using https://github.com/samtap/fang-hacks
+If you have a classic XiaoFang with an ARM-Processor, consider using https://github.com/samtap/fang-hacks
 
-## Installation and Usage
+## Installation
 
 Before installing OpenMiko, we suggest you carefully read the [FAQ](/doc/faq.md).
 
-Download the specific version of the firmware you wish to install. The releases can be found on the right hand side in Github under the label "Releases".
+Download the specific version of the firmware you wish to install. The releases can be found on the right hand side in GitHub under the label "Releases".
 
 [![Releases](doc/img/releases.png)](https://github.com/openmiko/openmiko/releases)
 
@@ -71,22 +71,72 @@ Hold the setup button, plug in your USB cable, keep holding the setup button for
 
 After about 30 seconds you should get a flashing yellow LED which indicates the camera is working.
 
+## Configuration
 
-## Setting up the wifi
+### Generating config files
 
-Wifi configuration is done via the sdcard.
+There are two BASH scripts that generate the `openmiko.conf` and `wpa_supplicant.conf`. These are found in the `utilities` directory:
+- [openmiko-gen.sh](/utilities/openmiko-gen.sh)
+- [wpa-gen.sh](/utilities/wpa-gen.sh)
 
-On the sdcard create the directories `/config/overlay/etc`:
+### Copying config files
+
+On your sdcard, create a directory `/config/overlay`. Any files added to this directory tree will be copied in place on to the camera's internal filesystem on boot.
+
+Copy the generated `openmiko.conf` and `wpa_supplicant.conf` to `/config/overlay/etc/` on the sdcard for them to be copied to `/etc/` on boot.
 
 ![Overlay Filesystem](doc/img/overlay_filesystem.png)
 
-In the `etc` directory copy the file [`wpa_supplicant.conf`](https://github.com/openmiko/openmiko/blob/master/overlay_minimal/etc/wpa_supplicant.conf). Edit this file and plug in your wifi name and password.
+Other files you may want to configure are:
+- `/config/overlay/etc/passwd` and `/config/overlay/etc/shadow` can be overwritten to make sure password changes are persistent
+- `/config/overlay/etc/dropbear/dropbear_ecdsa_host_key` can be used to have a persistent SSH signature
+- `/config/overlay/etc/hostname` can be used to set the hostname
+- `/config/overlay/etc/TZ` can be used to set the timezone
+- `/config/overlay/etc/v4l2rtspserver.conf` can be used to configure the RTSP server
+- `/config/overlay/etc/videocapture_settings.json` can be used to configure the video stream settings
+
+### Manual configuration
+
+#### Manual Openmiko configuration
+
+On the sdcard create the directory `/config/overlay/etc`.
+
+In the `etc` directory copy the file [`wpa_supplicant.conf`](/overlay_minimal/etc/openmiko.conf).
+
+Openmiko has many settings that can be altered through the `openmiko.conf` file. See it's contents for details.
+
+Pay particular attention to the variable `WIFI_MODULE`. Use 8189fs for WyzeCam V2. For the WyzeCam Pan and Dafang use 8189es.
 
 Insert the sdcard into the camera and reboot. OpenMiko will copy this directory over to the `/config` partition (which is persistent flash storage). This method can also be used to overwrite other files. For example:
 
+#### Manual wifi configuration
 
-- `/etc/passwd` and `/etc/shadow` can be overwritten to make sure password changes are persistent
-- `/config/overlay/etc/dropbear/dropbear_ecdsa_host_key` can be used to have a persistent SSH signature
+On the sdcard create the directory `/config/overlay/etc`.
+
+In the `etc` directory copy the file [`wpa_supplicant.conf`](/overlay_minimal/etc/wpa_supplicant.conf).
+
+Edit this file and plug in your Wi-Fi name and password.
+
+Insert the sdcard into the camera and reboot. OpenMiko will copy this directory over to the `/config` partition (which is persistent flash storage). This method can also be used to overwrite other files. For example:
+
+#### Manual video stream configuration
+
+Settings can be changed by editing /etc/videocapture_settings.json. However, the changes will not persist unless you write them to the flash. To ease saving these settings copy the file to `/config/overlay/etc/videocapture_settings.json`. The files in /config are mounted to the flash chip and will survive reboots.
+
+```
+"general_settings": {
+	"flip_vertical": 0,			// 1 flips image along vertical axis, 0 disables
+	"flip_horizontal": 0,		// 1 flips image along horizontal axis, 0 disables
+	"show_timestamp": 1 		// 1 enables timestamp, 0 disables
+},
+```
+Please refer this file at https://github.com/openmiko/ingenic_videocap/blob/master/settings.json and make changes as necessary. It is suggested to have a copy of this file while you are installing the firmware.
+
+### Resetting the configuration
+
+- While the camera is started hold down reset button for at least 6 seconds.
+- After 6 seconds the blue LED should turn on and pulse 3 heartbeats.
+- The `/config` partition (which is mounted to the persistent flash memory itself) will be removed.
 
 ## Usage
 
@@ -101,42 +151,17 @@ The streams can be accessed using the following URLs. Please make sure to repalc
 - http://Your_Camera_IP:8080/?action=stream
 - http://Your_Camera_IP:8080/?action=snapshot
 
+## Accessing the camera via SSH
 
-## Settings
+If you did not upload and `/etc/passwd` and `/etc/shadow` file to your camera, then it will start the SSH server with the default credentials.
+- Username: root
+- Password: root
 
-Settings can be changed by editing /etc/videocapture_settings.json. However the changes will not persist unless you write them to the flash. To ease saving these settings copy the file to `/config/overlay/etc/videocapture_settings.json`. The files in /config are mounted to the flash chip and will survive reboots.
+You can SSH on to the camera and change these with the `passwd` command.
 
-```
-"general_settings": {
-	"flip_vertical": 0,			// 1 flips image along vertical axis, 0 disables
-	"flip_horizontal": 0,		// 1 flips image along horizontal axis, 0 disables
-	"show_timestamp": 1 		// 1 enables timestamp, 0 disables
-},
-```
-Please refer this file at https://github.com/openmiko/ingenic_videocap/blob/master/settings.json and make changes as necessary. It is suggested to have a copy of this file while you are installing the firmware.
-### Writing Config Files
+## Modules
 
-On boot it is possible to put files on the sdcard and have them copied permanently to the configuration storage area of the camera.
-
-You should create a directory called `config` on the sdcard.
-
-Inside this directory create more directories. In particular create `/config/overlay/etc` and any files you want to write to the camera. For example to change the wifi module that is loaded create a file `<SDCARD>/config/overlay/etc/openmiko.conf`.
-
-In `openmiko.conf` copy the default one from https://github.com/openmiko/openmiko/blob/master/overlay_minimal/etc/openmiko.conf and change the line that says `WIFI_MODULE=8189fs` to `WIFI_MODULE=8189es`.
-
-
-### profile
-
-```
-0 - profile Constrained Baseline
-1 - profile Main
-2 - profile High
-```
-
-### Resetting the configuration
-
-While the camera is started hold down reset button for at least 6 seconds.
-After 6 seconds the blue LED should turn on and pulse 3 heartbeats. The `/config` partition (which is mounted to the persistent flash memory itself) will be removed.
+Openmiko supports proprietary [modules](/doc/modules.md) for extending its functionality. It is recommended to use an `fsck` module that matches your sdcard's file system.
 
 ## Troubleshooting
 
@@ -171,4 +196,4 @@ Please provide as much context as possible:
 
 ## Contributing
 
-Pull requests are welcome. For fixes of code and documentation, please go ahead and submit a pull request.
+Pull requests are welcome. For fixes of code and documentation, please go ahead and submit a pull request. Information on setting up your development environment can be found [here](doc/development.md).

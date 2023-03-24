@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Start the wifi....
 #
@@ -31,9 +31,14 @@ case "$1" in
 	# https://stackoverflow.com/questions/1251999/how-can-i-replace-a-newline-n-using-sed
 	sed -i ':a;N;$!ba;s/\r//g' "$CONFIGPATH/wpa_supplicant.conf"
 
-	wpa_supplicant -Dnl80211 -i wlan0 -c "$CONFIGPATH/wpa_supplicant.conf" -B -d -f /var/log/wpa_supplicant.log
 
-	HOSTNAME=`cat /etc/hostname`
+	if [ "$ENABLE_LOGGING" == "1" ]; then
+		ADDITIONAL_FLAGS="-f /var/log/wpa_supplicant.log"
+	fi
+
+	wpa_supplicant -Dnl80211 -i wlan0 -c "$CONFIGPATH/wpa_supplicant.conf" -B -d $ADDITIONAL_FLAGS
+
+	HOSTNAME=$(cat /etc/hostname)
 
 	logger -s "Using hostname: $HOSTNAME"
 	logger -s "Attempting DHCP"

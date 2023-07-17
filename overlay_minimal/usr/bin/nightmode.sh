@@ -1,6 +1,7 @@
 #!/bin/bash
 
 NIGHTVISION_FILE="/tmp/night_vision_enabled"
+DISABLE_IR_LEDS=0
 
 if [[ -f /etc/openmiko.conf ]]; then
 	. /etc/openmiko.conf
@@ -45,7 +46,7 @@ ir_cut() {
 case $1 in
 	on)
 		echo "$(date) - nightmode on"
-		if [ "$DISABLE_LEDS" == "0" ]; then
+		if [ "$DISABLE_IR_LEDS" == "0" ]; then
 			ir_led on
 			ir_cut off
 		fi

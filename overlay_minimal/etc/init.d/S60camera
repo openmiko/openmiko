@@ -69,7 +69,7 @@ start_camera() {
 
 
 	# Only set the number of v4l2loopback devices that we need. This hopefully will save some memory.
-	DEVICE_COUNT=1 # Default to 1, not sure if this can be 0 or 1.
+	DEVICE_COUNT=0
 	if [ ! -z "$VIDEO_DEV_1" ]; then
 		DEVICE_COUNT="$((DEVICE_COUNT + 1))"
 	fi

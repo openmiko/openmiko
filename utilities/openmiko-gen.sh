@@ -49,7 +49,7 @@ while [[ ${DETAILS_CORRECT} != [yY] ]]; do
     echo ""
   done
 
-  echo "Enable LEDS"
+  echo "Enable LEDs (The orange/blue LEDs on the back of the camera)"
   echo "0) Disable"
   echo "1) Enable"
 
@@ -58,10 +58,20 @@ while [[ ${DETAILS_CORRECT} != [yY] ]]; do
     echo ""
   done
 
+  echo "Enable IR LEDs (for night vision)"
+  echo "0) Disable"
+  echo "1) Enable"
+
+  while [[ ${ENABLE_IR_LEDS} != [01] ]]; do
+    read -n1 -rp "Enter 0 or 1: " ENABLE_IR_LEDS
+    echo ""
+  done
+
   echo -e "\nCamera Type: "
   [ "${CAM_TYPE}" == "0" ] && echo -e "Wyze V2" || echo -e "Wyze V2 Pan or Dafang"
   echo "Enable MJPEG over HTTP: ${ENABLE_MJPEG_OVER_HTTP}"
-  echo "Enable LEDS: ${ENABLE_LEDS}"
+  echo "Enable LEDs: ${ENABLE_LEDS}"
+  echo "Enable IR LEDs: ${ENABLE_IR_LEDS}"
 
   read -n1 -rp "Is this correct? (y/n): " DETAILS_CORRECT
 done
@@ -87,6 +97,8 @@ MJPEG_FPS=15
 # Script that detects nighttime/daytime and turns on IR LEDs
 ENABLE_AUTONIGHT=1
 AUTONIGHT_PARAMS="-j 3 -w 3 -1 1200000 -2 930000,14,10 -3 3000,17,8"
+# Enables/Disables IR LEDs in night mode. Useful when you have want to use a different nightvision light than the onboard camera.
+DISABLE_IR_LEDS=$((ENABLE_IR_LEDS ^ 1))
 # Set alternate videocapture settings file
 # VIDEO_CAPTURE_SETTINGS=/etc/videocapture_settings_1_encoder.json
 # Set enable audio (is currently buggy, use at your own risk!)
@@ -97,7 +109,7 @@ VIDEO_DEV_2=/dev/video4
 VIDEO_DEV_3=/dev/video5
 # Use 8189fs for WyzeCam V2. For the WyzeCam Pan and Dafang use 8189es
 WIFI_MODULE=${WIFI_MODULE}
-# Disables LEDs on the camera
+# Disables LEDs on the camera (The orange/blue LEDs on the back of the camera)
 DISABLE_LEDS=$((ENABLE_LEDS ^ 1))
 # Enable Logging
 ENABLE_LOGGING=0

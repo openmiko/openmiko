@@ -1,6 +1,8 @@
 
-# Flashing openfang bootloader using serial interface
+## Flashing openfang bootloader using serial interface
 
+#Note
+Serial port's baud rate is 115200
 
 Tera Term VT can be used as the tool to send the bootloader through YModem protocol.
 

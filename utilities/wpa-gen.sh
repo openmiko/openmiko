@@ -61,7 +61,7 @@ bgscan="simple:30:-45:300"
 
 network={
         ssid="${WPA_SSID}"
-        scan_ssid="${SCAN_SSID}"
+        scan_ssid=${SCAN_SSID}
         key_mgmt=WPA-PSK
         pairwise=CCMP TKIP
         group=CCMP TKIP WEP104 WEP40

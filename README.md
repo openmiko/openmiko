@@ -163,6 +163,34 @@ You can SSH on to the camera and change these with the `passwd` command.
 
 Openmiko supports proprietary [modules](/doc/modules.md) for extending its functionality. It is recommended to use an `fsck` module that matches your sdcard's file system.
 
+## Upgrading
+
+To upgrade to a newer release you will need to download the upgrade script and find a version number for the release you would like to install.
+
+Have a look in the [releases](https://github.com/openmiko/openmiko/releases) section and find the full version string (the value after /tag/ in the release URL).  For example: `v0.0.40` .
+
+Now, download the upgrade script:
+
+```
+curl https://raw.githubusercontent.com/openmiko/openmiko/master/overlay_minimal/usr/bin/upgrade_openmiko.sh > upgrade_openmiko.sh
+chmod +x upgrade_openmiko.sh
+```
+and run the upgrade:
+
+```
+./upgrade_openmiko.sh v0.0.40
+```
+
+Be sure to substitute your desired version number.  You may consider saving these commands as a script in `/sdcard/config/overlay/root/` for later use.
+
+If the upgrade succeeds you will see: `OpenMiko image flashed successfully. Reboot is required.`.  Type:
+
+```
+reboot
+```
+
+If instead you see: `ERROR: Upgrade failed.  Your system may not survive a reboot!  Troubleshoot and retry the upgrade.` do not reboot.  Find the cause (perhaps run the upgrade script with `bash -x`) or ask for help.
+
 ## Troubleshooting
 
 If you can't seem to get up and running here are some things to check:
@@ -177,7 +205,6 @@ If you can't seem to get up and running here are some things to check:
 - Some WyzeCams have a buggy bootloader from the factory and won't flash anything. The only way around this is to flash a new bootloader.
 - If you flashed the custom HD Dafang bootloader you will need to revert to the original one. A copy of the old WyzeCam V2 original bootloader is here: https://github.com/openmiko/openmiko/blob/master/stock_firmware/wyzecam_v2/wyzecam_v2_stock_bootloader.bin
 - Join the Slack and ask a question for more help
-
 
 ## Issues and support
 

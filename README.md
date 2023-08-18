@@ -145,9 +145,9 @@ The configuration by default provides 2 output streams:
 - 1920x1080 H264
 - 1920x1080 JPG over HTTP (MJPEG)
 
-The streams can be accessed using the following URLs. Please make sure to repalce 'Your_Camera_IP' with the correct IP of your camera:
+The streams can be accessed using the following URLs. Please make sure to replace 'Your_Camera_IP' with the correct IP of your camera:
 
-- rtsp://Your_Camera_IP:8554/video3_unicast
+- rtsp://Your_Camera_IP:8554/video3/unicast
 - http://Your_Camera_IP:8080/?action=stream
 - http://Your_Camera_IP:8080/?action=snapshot
 

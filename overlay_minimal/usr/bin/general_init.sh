@@ -9,32 +9,40 @@ SD_FILESYSTEM=vfat
 FILESYSTEMS=(vfat exfat ext4 ext3 ext2 ext4dev)
 
 if [[ -f /etc/openmiko.conf ]]; then
-	. /etc/openmiko.conf
+  . /etc/openmiko.conf
 
 elif [[ -f /config/overlay/etc/openmiko.conf ]]; then
-	. /config/overlay/etc/openmiko.conf
+  . /config/overlay/etc/openmiko.conf
 fi
 
 function run_fsck() {
   local SD_FILESYSTEM=$1
+  local FSCK_FOUND=
   FSCK_FLAGS="-p"
   if [[ "$SD_FILESYSTEM" == "vfat" ]]; then
-	  FSCK_FLAGS="-p -w"
+    FSCK_FLAGS="-p -w"
   elif [[ "$SD_FILESYSTEM" == "exfat" ]]; then
-	  FSCK_FLAGS=""
+    FSCK_FLAGS=""
   fi
 
   logger -s -t general_init "Attempting fsck.$SD_FILESYSTEM"
 
-	if command -V fsck."$SD_FILESYSTEM" > /dev/null; then
+  if command -V fsck."$SD_FILESYSTEM" > /dev/null; then
+    FSCK_FOUND=true
+  elif [ -f "/config/overlay/usr/bin/fsck.$SD_FILESYSTEM" ]; then
+    cp "/config/overlay/usr/bin/fsck.$SD_FILESYSTEM" "/usr/bin/fsck.$SD_FILESYSTEM"
+    FSCK_FOUND=true
+  fi
+
+  if [ "$FSCK_FOUND" == "true" ]; then
     fsck -t "$SD_FILESYSTEM" $FSCK_FLAGS "$SD_PARTITION"
     local RETURN_CODE=$?
     logger -s -t general_init "fsck.$SD_FILESYSTEM returned $RETURN_CODE"
     return $RETURN_CODE
-	fi
+  fi
 
   logger -s -t general_init "fsck.$SD_FILESYSTEM not found"
-	return 1
+  return 1
 }
 
 function try_fscks() {
@@ -78,9 +86,9 @@ function mount_sdcard() {
     # Attempting filesystem defined in config
     if ! mount -t "$SD_FILESYSTEM" "$SD_PARTITION" /sdcard -o rw; then
       # Attempt to auto-detect filesystem
-  	  if ! mount "$SD_PARTITION" /sdcard -o rw; then
-  	    return 1
-  	  fi
+      if ! mount "$SD_PARTITION" /sdcard -o rw; then
+        return 1
+      fi
     fi
 }
 
@@ -97,25 +105,25 @@ setup_sdcard_access() {
     logger -s -t general_init "fsck failed"
   fi
 
-	mkdir -p /sdcard
+  mkdir -p /sdcard
 
   if mount_sdcard; then
     logger -s -t general_init "mount /sdcard successful"
-	else
+  else
     logger -s -t general_init "mount /sdcard failed"
   fi
 
   sleep 1
 
-	# Write log files to the sdcard
-	mkdir -p /sdcard/var/log
+  # Write log files to the sdcard
+  mkdir -p /sdcard/var/log
 
-	if [ "$ENABLE_LOGGING" == "1" ]; then
-		# Current state is /var/log -> ../tmp
-		# At this point /tmp is empty (not sure why)
-		rm /var/log
-		ln -s /sdcard/var/log /var/log
-	fi
+  if [ "$ENABLE_LOGGING" == "1" ]; then
+    # Current state is /var/log -> ../tmp
+    # At this point /tmp is empty (not sure why)
+    rm /var/log
+    ln -s /sdcard/var/log /var/log
+  fi
 }
 
 
@@ -125,28 +133,28 @@ setup_sdcard_access() {
 # for the mmc devices to show up
 
 if [ -e $SD_PARTITION ]; then
-	setup_sdcard_access
+  setup_sdcard_access
 else
-	# If the device doesn't exist then either the sdcard is not present or we need to export the pin
-	gpio_export '43'
-	gpio_direction_output '43'
-	sleep 3
+  # If the device doesn't exist then either the sdcard is not present or we need to export the pin
+  gpio_export '43'
+  gpio_direction_output '43'
+  sleep 3
 
-	# If after exporting the device exists then setup
-	if [ -e $SD_PARTITION ]; then
-		setup_sdcard_access
-	else
-		# If it still doesn't exist then unexport and continue
-		gpio_unexport '43'
-	fi;
+  # If after exporting the device exists then setup
+  if [ -e $SD_PARTITION ]; then
+    setup_sdcard_access
+  else
+    # If it still doesn't exist then unexport and continue
+    gpio_unexport '43'
+  fi;
 fi;
 
 
 OPENMIKO_CONFIG_FILE=/sdcard/config/overlay/etc/openmiko.conf
 if [[ -f $OPENMIKO_CONFIG_FILE ]]; then
-	# Ensure UNIX-style line endings
-	sed -i ':a;N;$!ba;s/\r//g' "$OPENMIKO_CONFIG_FILE"
-	. $OPENMIKO_CONFIG_FILE
+  # Ensure UNIX-style line endings
+  sed -i ':a;N;$!ba;s/\r//g' "$OPENMIKO_CONFIG_FILE"
+  . $OPENMIKO_CONFIG_FILE
 fi
 
 logger -s -t general_init "Mounting flash partitions"
@@ -156,30 +164,30 @@ mount -t jffs2 /dev/mtdblock3 /config
 
 if [ $? -ne 0 ]
 then
-	logger -s -t general_init "Error mounting /dev/mtdblock3 on /config"
-	exit 1
+  logger -s -t general_init "Error mounting /dev/mtdblock3 on /config"
+  exit 1
 fi
 
 clear_config_partition() {
-	if [[ "$CLEAR_CONFIG_PARTITION" == "1" ]]; then
-		echo "Wiping /config"
-		rm -rf /config/*
-		echo "Wipe complete. Make sure you remove the CLEAR_CONFIG_PARTITION flag."
-	fi	
+  if [[ "$CLEAR_CONFIG_PARTITION" == "1" ]]; then
+    echo "Wiping /config"
+    rm -rf /config/*
+    echo "Wipe complete. Make sure you remove the CLEAR_CONFIG_PARTITION flag."
+  fi  
 }
 clear_config_partition
 
 if [ -d "/sdcard/modules" ]
 then
-	. /usr/bin/install-modules.sh
+  . /usr/bin/install-modules.sh
 fi
 
 # Should implement an optimization here to check for each file
 # so we don't wear out flash chip
 if [ -d "/sdcard/config" ]
 then
-	logger -s -t general_init "Copying files from sdcard to flash storage"
-	find /sdcard/config -type f -exec sh -c 'SOURCE={};TARGET=${SOURCE#/sdcard};install -D $SOURCE $TARGET' \; -print
+  logger -s -t general_init "Copying files from sdcard to flash storage"
+  find /sdcard/config -type f -exec sh -c 'SOURCE={};TARGET=${SOURCE#/sdcard};install -D $SOURCE $TARGET' \; -print
 fi
 
 logger -s -t general_init "Copying files from flash storage to ram"

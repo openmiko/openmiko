@@ -41,7 +41,7 @@ start_camera() {
 	  insmod /lib/modules/3.10.14/kernel/drivers/media/platform/sensors/jxf22/sensor_jxf22.ko data_interface=2 pwdn_gpio=-1 reset_gpio=18 sensor_gpio_func=0
 	fi
 
-	# Turn on the infared cutoff filter (normal light operation)
+	# Turn on the infrared cutoff filter (normal light operation)
 	/usr/bin/nightmode.sh off
 
 	# For some reason if I load the v4l2rtspserver with live555 before
@@ -57,7 +57,7 @@ start_camera() {
 	sleep 1
 
 	if [ $ENABLE_AUDIO = "1" ]; then 
-		if ! ps | grep -q '[f]fmpeg -thread_queue_size' ; then
+		if ! pidof ffmpeg; then
 			echo "Starting FFMPEG audio thread..."
 			ffmpeg -thread_queue_size 256 -fflags +genpts -re -nostats -nostdin -ac 1 -f oss -i /dev/dsp -codec:a copy -f alsa hw:0,0 > /dev/null 2>&1 &
 		else
@@ -84,7 +84,7 @@ start_camera() {
 
 	modprobe v4l2loopback devices=$DEVICE_COUNT
 
-	if ! ps | grep -wq [v]ideocapture; then
+	if ! pidof videocapture; then
 		logger -s "Starting video frame capture process"
 		if [ "$ENABLE_LOGGING" == "1" ]; then
 			/usr/bin/videocapture $VIDEO_CAPTURE_SETTINGS >> /var/log/videocapture.log 2>&1 &
@@ -112,7 +112,7 @@ start_camera() {
 	# This command includes the ALSA hardware but we are disabling for now
 	#/usr/bin/v4l2rtspserver /dev/video3,hw:0,1 > /var/log/v4l2rtspserver.log &
 
-	if ! ps | grep -wq [v]4l2rtspserver; then
+	if ! pidof v4l2rtspserver; then
 		logger -s "Starting v4l2rtspserver"
 		DEVICES=""
 		# Loop through devices to see if they're enabled and add them to rtspserver options
@@ -159,15 +159,15 @@ start_camera() {
 case "$1" in
 	start)
 	start_camera
-
 	;;
+
   stop)
 	killall videocapture
 	killall v4l2rtspserver
 	killall ffmpeg
 	;;
-  restart|reload)
 
+  restart|reload)
 	killall videocapture
 	killall v4l2rtspserver
 	killall ffmpeg

@@ -22,15 +22,16 @@ while [[ ${DETAILS_CORRECT} != [yY] ]]; do
   WPA_SSID=""
   WPA_PASSWORD=""
   IS_HIDDEN_SSID=""
+  STORE_MODE=""
 
   echo ""
 
   while [[ -z "${WPA_SSID}" ]]; do
-    read -rp "Enter the SSID:" WPA_SSID
+    read -rp "Enter the SSID: " WPA_SSID
   done
 
   while [[ -z "${WPA_PASSWORD}" ]]; do
-    read -rp "Enter the password:" WPA_PASSWORD
+    read -rp "Enter the password: " WPA_PASSWORD
   done
 
   while [[ ${IS_HIDDEN_SSID} != [yYnN] ]]; do
@@ -38,19 +39,39 @@ while [[ ${DETAILS_CORRECT} != [yY] ]]; do
     echo ""
   done
 
+  while [[ ${STORE_MODE} != [phPH] ]]; do
+    echo "How would you like to store the WiFi password?"
+    echo "p) Plaintext (psk=\"password\")"
+    echo "h) Hashed (psk=<derived hash>)"
+    read -n1 -rp "Enter choice (p/h): " STORE_MODE
+    echo ""
+  done
+
   echo -e "\nSSID: ${WPA_SSID}"
   echo "Password: ${WPA_PASSWORD}"
   echo "Hidden SSID: ${IS_HIDDEN_SSID}"
+  if [[ ${STORE_MODE} =~ [hH] ]]; then
+    echo "Password storage: Hashed"
+  else
+    echo "Password storage: Plaintext"
+  fi
 
   read -n1 -rp "Is this correct? (y/n): " DETAILS_CORRECT
+  echo ""
 done
 
-echo ""
-
 SCAN_SSID="0"
-
-if [ "${IS_HIDDEN_SSID}" == "y" ]; then
+if [[ ${IS_HIDDEN_SSID} =~ [yY] ]]; then
   SCAN_SSID="1"
+fi
+
+# Default to plaintext
+PSK_LINE="psk=\"${WPA_PASSWORD}\""
+
+# If hash selected, generate PSK
+if [[ ${STORE_MODE} =~ [hH] ]]; then
+  HASHED_PSK=$(wpa_passphrase "${WPA_SSID}" "${WPA_PASSWORD}" | grep '^\s*psk=' | grep -v '#psk')
+  PSK_LINE="${HASHED_PSK}"
 fi
 
 cat << EOF > "${OUTPUT_DIRECTORY}/wpa_supplicant.conf"
@@ -65,7 +86,7 @@ network={
         key_mgmt=WPA-PSK
         pairwise=CCMP TKIP
         group=CCMP TKIP WEP104 WEP40
-        psk="${WPA_PASSWORD}"
+        ${PSK_LINE}
         priority=2
 }
 EOF
